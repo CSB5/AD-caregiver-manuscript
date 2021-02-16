@@ -1,0 +1,12 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11357_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	862.901	5snp		1.832	273	0.015	Bacteriocin_bsa	Bacteriocin_bsa	
+WHB11357_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	498.0	8snp		2.319	345	0.023	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11357_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	1004.511			0.0	326	0.024	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WHB11357_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	531.586	1snp		0.203	492	0.013	Staphylokinase_sak	Staphylokinase_sak	
+WHB11357_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	96.584	580.954	92snp3indel81holes	edge0.0	3.917	2430	0.14	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WHB11357_fastpdecont	multi_vir_genes	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	97.011	810.367	237snp23indel270holes		2.531	9635	0.498	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	
+WHB11357_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	651.24	6snp		0.514	1167	0.031	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11357_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	100.0	1098.037	37snp		1.298	2851	0.02	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11357_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	100.0	477.401	18snp		2.39	753	0.167	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WHB11357_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	878.314			0.0	960	0.019	a-hemolysin_hla	a-hemolysin_hla	
+WHB11357_fastpdecont	multi_vir_genes	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	99.948	614.488	13snp1indel		0.677	1921	0.205	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	

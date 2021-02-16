@@ -1,0 +1,62 @@
+---
+title: "fig2C_regression"
+author: "Minghao Chia"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+```{r}
+library(tidyverse)
+library(here)
+library(ggpubr)
+```
+
+Load in data 
+
+```{r}
+#NB: some features are NA because said library was excluded from analysis etc
+combined_demographics <- read_tsv("../metadata/combined_demographics.tsv")
+
+demographics_AD_child <- combined_demographics %>% filter(str_detect(subject_ID, pattern="^[A]"))
+
+```
+
+Fit a linear model of A/H ratio against child SCORAD, separately for Ac and Vf
+
+Figure 2C.
+
+```{r, echo = FALSE}
+
+#plot for children's antecubital fossae dataset
+
+AD_child_AC_SCORAD_plot <- ggplot(demographics_AD_child %>% filter(!is.na(AC_aureus_hom_bal)), aes(x=child_SCORAD, y=AC_aureus_hom_bal)) + geom_point() + 
+  theme_classic() + geom_smooth(method='lm', se=FALSE) + stat_cor(label.y=4) +
+  ylab("A/H ratio") + ggtitle("Children's antecubital fossae")
+
+AD_child_AC_SCORAD_plot
+
+ggsave("../plots/fig2c_child_AC_scorad.svg", plot=AD_child_AC_SCORAD_plot, 
+       width=14, height=7)
+```
+
+```{r, echo = FALSE}
+#plot for children's volar forearm dataset
+
+AD_child_VF_SCORAD_plot <- ggplot(demographics_AD_child %>% filter(!is.na(VF_aureus_hom_bal)), aes(x=child_SCORAD, y=VF_aureus_hom_bal)) + geom_point() + 
+  theme_classic() + geom_smooth(method='lm', se=FALSE) + stat_cor(label.y=4) +
+  ylab("A/H ratio") + ggtitle("Children's volar forearm")
+
+AD_child_VF_SCORAD_plot
+
+ggsave("../plots/fig2c_child_VF_scorad.svg", plot=AD_child_VF_SCORAD_plot, 
+       width=14, height=7)
+
+
+```
+
+

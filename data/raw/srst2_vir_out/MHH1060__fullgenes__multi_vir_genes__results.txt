@@ -1,0 +1,14 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+MHH1060_fastpdecont	multi_vir_genes	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	100.0	87.729	5snp		1.111	450	0.065	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	
+MHH1060_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	164.015	5snp		1.832	273	0.043	Bacteriocin_bsa	Bacteriocin_bsa	
+MHH1060_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	92.598	8snp		2.319	345	0.065	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+MHH1060_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	257.257			0.0	326	0.025	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+MHH1060_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	112.402	2snp		0.407	492	0.063	Staphylokinase_sak	Staphylokinase_sak	
+MHH1060_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	96.502	126.853	92snp2indel84holes	edge0.0	3.922	2430	0.28	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+MHH1060_fastpdecont	multi_vir_genes	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	97.011	152.676	240snp19indel274holes		2.564	9635	0.492	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	
+MHH1060_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	141.867	6snp		0.514	1167	0.053	Staphopain_A_scpA	Staphopain_A_scpA	
+MHH1060_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	100.0	250.386	37snp		1.298	2851	0.036	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+MHH1060_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	100.0	103.231	18snp	edge1.0	2.39	753	0.067	Enterotoxin_A_sea	Enterotoxin_A_sea	
+MHH1060_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	201.953			0.0	960	0.043	a-hemolysin_hla	a-hemolysin_hla	
+MHH1060_fastpdecont	multi_vir_genes	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	100.0	123.812	12snp		0.625	1921	0.333	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	
+MHH1060_fastpdecont	multi_vir_genes	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	100.0	162.28	74snp		1.505	4916	0.485	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	

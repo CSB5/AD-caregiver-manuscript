@@ -1,0 +1,427 @@
+---
+title: "figure1_species_analysis"
+author: "Minghao Chia"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+```{r}
+library(metagenomeSeq)
+library(tidyverse)
+library(here)
+library(ggpubr)
+library(vegan)
+library(ggrepel)
+library(cowplot)
+```
+
+Read metadata and dataframe of raw Bracken counts
+
+
+```{r, message=FALSE}
+#load in metadata information and remove Libraries with < 10K read pairs after removal of human reads mapping to human genome
+
+metadata <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE) %>%
+  filter(after_decont >= 10000)
+
+#get a vector of all library IDs that belong to AD houses.
+AD_hses <- metadata %>% filter(child_disease_state==1) %>% dplyr::select(LibraryID)
+
+#Load in species level bracken counts, which was pre-processed to exclude reads classified as contaminants: "Janibacter_indicus", "Homo_sapiens", "Achromobacter_xylosoxidans", "Paracoccus_yeei" and "Acinetobacter_baumannii"
+bracken_count_mat <- read.table(file="../data/processed/bracken_readcounts_mat", header = T, comment = '', check = F, sep = ' ')
+
+#replace unnecessary symbols in taxa row names
+rownames(bracken_count_mat) <- gsub(pattern="\\[|\\]", replacement="", rownames(bracken_count_mat))
+
+
+#Load in bracken relative abundances. Abundances renormalized after removing human fraction and contaminants
+subjects_bracken_renorm_df <- read_tsv("../data/processed/subjects_bracken_renorm_df", col_names = TRUE) %>% dplyr::select(-subj_region_label)
+
+```
+
+Define custom functions
+```{r}
+split_dataset_fn <- function(df=bracken_MO_CSS_filtered_df, mode){
+  if(mode == "VF_caregiver"){
+    samples_to_keep <- metadata %>% 
+      filter(sample_category=="caregiver",
+             body_region=="VF") %>% pull(LibraryID)
+  }else if(mode=="AC_caregiver"){
+     samples_to_keep <- metadata %>% 
+      filter(sample_category=="caregiver",
+             body_region=="AC") %>% pull(LibraryID)
+  }else if(mode=="VF_child"){
+     samples_to_keep <- metadata %>% 
+      filter(sample_category=="child",
+             body_region=="VF") %>% pull(LibraryID)
+  }else if(mode=="AC_child"){
+     samples_to_keep <- metadata %>% 
+      filter(sample_category=="child",
+             body_region=="AC") %>% pull(LibraryID)
+  } else if(mode=="AC"){
+     samples_to_keep <- metadata %>% 
+      filter(body_region=="AC") %>% pull(LibraryID)
+  } else if(mode=="VF"){
+     samples_to_keep <- metadata %>% 
+      filter(body_region=="VF") %>% pull(LibraryID)
+     }
+  
+  output <- df[which(row.names(df) %in% samples_to_keep),]
+  return(output)
+}
+
+taxa_wilcox_fn <- function(x){
+  taxa_to_test <- taxa_names_after_filter
+  
+  wilcox_list <-  vector(mode="list", length = length(taxa_to_test))
+  
+  for (i in 1: length(taxa_to_test)){
+    taxa <- taxa_to_test[i]
+    print(taxa)
+    test_df <- x[,c(taxa, "AD_hse")]
+    colnames(test_df)[1] <- "test_taxa"
+    test_res <- compare_means(test_taxa ~ AD_hse, test_df, paired = FALSE, method = "wilcox.test")
+    test_res[,".y."] <- taxa
+    wilcox_list[[i]] <- test_res
+  }
+  
+  wilcox_list <- lapply(wilcox_list, function(x){
+    out <- x %>% dplyr::select(c(".y.", "p"))
+    return(out)
+  })
+  return(wilcox_list)
+  
+}
+
+wilcox_and_bind_fn <- function(input){ #input can be AC_caregiver_count_CSS etc.
+  output_wilcox_df <- taxa_wilcox_fn(input)
+  output_wilcox_df <- do.call("rbind", output_wilcox_df)
+  output_wilcox_df$padj <- p.adjust(output_wilcox_df $p, method = "fdr")
+  return(output_wilcox_df)
+}
+
+prepare_scatter_df_fn <- function(input_CSS, wilcox_df){
+  taxa_to_keep <- wilcox_df %>% filter(padj < 0.05) %>% pull(.y.) %>% 
+    append(., c("AD_hse")) #append adds elements to a vector (output of pull)
+  input_CSS$LibraryID <- row.names(input_CSS)
+  
+  wide_df <- input_CSS %>% dplyr::select(all_of(taxa_to_keep))
+  
+  #get median counts for each taxa
+  wide_df_AD <- wide_df %>% filter(AD_hse == "AD_house") %>% mutate_if(is.numeric, median)
+  wide_df_healthy <- wide_df %>% filter(AD_hse == "Healthy_house") %>%
+    mutate_if(is.numeric, median)
+  
+  tall_df_AD <- wide_df_AD[1,] %>% dplyr::select(-AD_hse)%>%
+    pivot_longer(.,cols=everything(), names_to="species",
+                 values_to="median_CSS_counts_AD")
+  
+  tall_df_healthy <- wide_df_healthy[1,] %>% dplyr::select(-AD_hse)%>%
+    pivot_longer(.,cols=everything(),names_to="species",
+                 values_to="median_CSS_counts_healthy")
+  output <- merge(tall_df_AD, tall_df_healthy, by = "species")
+  return(output)
+}
+
+density_plot_fn <- function(var,df=VF_caregiver_count_CSS,title,
+                        x_axis= paste0("CSS norm ", var)){
+  dept_var <- var
+  df$AD_hse <- factor(df$AD_hse, levels = c("AD_house", "Healthy_house"))
+  ##K-S test
+  AD_test_vector <- df %>% filter(AD_hse=="AD_house") %>% pull(dept_var)
+  healthy_test_vector <- df %>% filter(AD_hse=="Healthy_house") %>% pull(dept_var)
+  KS_test <- ks.test(x=AD_test_vector, y=healthy_test_vector) #two-sided
+  ##
+   
+  plot <- ggplot(df, aes(color=AD_hse, x = df[, dept_var])) + 
+     geom_density(size =2) +
+    annotate(geom="text", label=paste0("KS test p value = ", signif(KS_test$p.value, digits=2)), x = -Inf, y = Inf, 
+             hjust =0, vjust=1) +
+     theme_classic() +
+     xlab(x_axis) +
+     theme(axis.title.y = element_blank())+
+     ggtitle(title)  
+  return(plot)
+}
+
+
+#For the following function, comparison can be "child", "caregiver", "healthy" or "disease", 
+#x can be subjects_bracken_renorm_shannon
+#index can be either "shannon" or "simpson (mainly for ggplot title)
+
+get_index_boxplot <- function(x, comparison, index){
+  x$plotting_category <- paste0(x$sample_category,"_",x$body_region)
+  x$plotting_category <- ifelse(x$child_disease_state==1, paste0("AD_",x$plotting_category), paste0("healthy_",x$plotting_category))
+  
+  if(comparison=="child"){ #exclude lesions
+    df <- x %>% filter(sample_category=="child" & body_region != "LE" )
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('healthy_child_VF','AD_child_VF',
+               'healthy_child_AC', 'AD_child_AC',
+               'healthy_child_CH', 'AD_child_CH'), ordered = TRUE)
+    
+      my_comparisons <- list(c("healthy_child_VF", "AD_child_VF"), 
+                          c("healthy_child_AC", "AD_child_AC"),
+                        c("healthy_child_CH", "AD_child_CH"))
+    }
+  else if (comparison=="caregiver") {
+    df <- x %>% filter(sample_category=="caregiver")
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('healthy_caregiver_VF','healthy_caregiver_AC', 
+               'AD_caregiver_VF', 'AD_caregiver_AC'), ordered = TRUE)
+     my_comparisons <- list( c("healthy_caregiver_VF", "AD_caregiver_VF"), 
+                          c("healthy_caregiver_AC", "AD_caregiver_AC"))
+    }
+  else if (comparison=="healthy"){
+     df <- x %>% filter(child_disease_state=="0")
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('healthy_child_VF','healthy_child_AC', 'healthy_child_CH',
+               'healthy_caregiver_VF','healthy_caregiver_AC'), ordered = TRUE)
+     my_comparisons <- list( c("healthy_child_VF", "healthy_caregiver_VF"), 
+                          c("healthy_child_AC", "healthy_caregiver_AC"))
+    }
+    else if (comparison=="disease"){
+     df <- x %>% filter(child_disease_state=="1")
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('AD_child_VF', 'AD_child_AC', 'AD_child_CH', 'AD_child_LE', 
+               'AD_caregiver_VF','AD_caregiver_AC'), ordered = TRUE)
+    my_comparisons <- list( c("AD_child_VF", "AD_caregiver_VF"), 
+                          c("AD_child_AC", "AD_caregiver_AC"))
+    }
+  
+  if(index=="shannon"){
+    axis_title <- "Shannon diversity"
+  } else if(index=="simpson") {
+    axis_title <- "Simpson diversity"
+  }
+  
+  
+  plot <- ggplot(df, aes(x=plotting_category, y=index)) + geom_boxplot() + theme_classic() + 
+  stat_compare_means(paired = FALSE, method = "wilcox.test", comparisons=my_comparisons) +
+  ylab(axis_title) + 
+    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 45, hjust=1))
+  return(plot)
+  
+}
+```
+
+
+Perform CSS normalization on bracken read counts. 
+
+```{r CSS_norm}
+
+# convert read count df into a metaSeqObject (MO)
+bracken_MO<- newMRexperiment(bracken_count_mat)
+# CSS normalization
+bracken_MO_CSS  <- cumNorm(bracken_MO, p = cumNormStatFast(bracken_MO))
+
+# convert CSS normalized data into data.frame-formatted log transformed data)
+#Please note that normalized count values are not whole numbers, and they should not be renormalized (i.e. converted to relative abundances)
+#Transpose the CSS normalized counts to have samples for rows and taxa(variables) for columns
+bracken_MO_CSS_df <- data.frame(t(MRcounts(bracken_MO_CSS, norm=TRUE, log=TRUE)))
+```
+
+
+Subsequently, filter away rare species, defined by bracken median rel. abundance < 0.1%
+
+Use the remainder to subset for taxa to keep after CSS normalization
+
+```{r filter_rare}
+
+rel_abun_col_filter <- vector(length=ncol(subjects_bracken_renorm_df)-1) 
+rel_abun_col_filter[1] <- TRUE
+for (i in 2:ncol(subjects_bracken_renorm_df)) {
+  rel_abun_col_filter[i] <- ifelse(median(pull(subjects_bracken_renorm_df[,i])) >= 0.001, TRUE, FALSE )
+}
+
+bracken_filtered_taxa_df <- subjects_bracken_renorm_df[,rel_abun_col_filter]
+
+#replace "-" with "." in the colnames of bracken_filtered_taxa_df, to avoid downstream conflicts
+colnames(bracken_filtered_taxa_df) <- gsub(pattern="-", replacement=".", colnames(bracken_filtered_taxa_df))
+
+taxa_names_after_filter <- colnames(bracken_filtered_taxa_df[,-1])
+
+#Filter CSS output to remove extremely rare species
+bracken_MO_CSS_filtered_df <- bracken_MO_CSS_df %>% dplyr::select(all_of(colnames(bracken_filtered_taxa_df[,-1])))
+
+#Add one column for the response variable (Y), called AD_hse
+bracken_MO_CSS_filtered_df$AD_hse <- NA
+for (i in 1:nrow(bracken_MO_CSS_filtered_df)){
+  if (row.names(bracken_MO_CSS_filtered_df[i,]) %in% AD_hses$LibraryID){
+    bracken_MO_CSS_filtered_df[i, "AD_hse"] <- 1
+  } else{
+    bracken_MO_CSS_filtered_df[i, "AD_hse"] <- 0
+  }
+}
+
+bracken_MO_CSS_filtered_df$AD_hse <- ifelse(bracken_MO_CSS_filtered_df$AD_hse == 0, yes="Healthy_house", no="AD_house")
+
+bracken_MO_CSS_filtered_df$AD_hse <- factor(bracken_MO_CSS_filtered_df$AD_hse, 
+                                           levels=c("Healthy_house", "AD_house"))
+
+write.table(bracken_MO_CSS_filtered_df, "../data/processed/bracken_MO_CSS_filtered_df")
+
+```
+
+Split the CSS dataset into groups
+```{r}
+VF_caregiver_count_CSS <- split_dataset_fn(mode="VF_caregiver")
+AC_caregiver_count_CSS <- split_dataset_fn(mode="AC_caregiver")
+
+VF_child_count_CSS <- split_dataset_fn(mode="VF_child")
+AC_child_count_CSS <- split_dataset_fn(mode="AC_child")
+
+VF_all_count_CSS <- split_dataset_fn(mode="VF")
+AC_all_count_CSS <- split_dataset_fn(mode="AC")
+
+```
+
+Perform wilcoxon rank sum tests on the datasets, for the 43 species after filtering
+
+```{r, message=FALSE}
+########Testing children samples#####
+
+child_AC_CSS_wilcox_df <- wilcox_and_bind_fn(AC_child_count_CSS)
+
+child_VF_CSS_wilcox_df <- wilcox_and_bind_fn(VF_child_count_CSS)
+
+
+########Testing caregiver samples#####
+
+cg_AC_CSS_wilcox_df <- wilcox_and_bind_fn(AC_caregiver_count_CSS)
+
+cg_VF_CSS_wilcox_df <- wilcox_and_bind_fn(VF_caregiver_count_CSS)
+
+```
+
+Scatter plots to show which taxa are more abundant in AD vs healthy skin (children only, since only the taxa with adjusted p value <0.05 are included)
+
+Figure 1A, left panel
+
+
+```{r fig1A_left, echo=FALSE}
+
+AC_child_CSS_scatter_input <- prepare_scatter_df_fn(AC_child_count_CSS, child_AC_CSS_wilcox_df)
+
+
+AC_child_taxa_scatter <- ggplot(AC_child_CSS_scatter_input, aes(x=median_CSS_counts_healthy, y=median_CSS_counts_AD)) + geom_point() + 
+  geom_text(aes(label=ifelse(str_detect(species,"Dermacoccus_nishinomiyaensis|Staphylococcus_aureus|Staphylococcus_hominis|Streptococcus_mitis|Staphylococcus_capitis"), 
+                                   species, " "))) +
+  geom_abline(intercept=0, slope =1) +
+    theme_classic() + xlim(5, 13) + ylim(5, 13) +
+  geom_point(data=AC_child_CSS_scatter_input %>% 
+               filter(species %in% c("Staphylococcus_aureus", 
+                                     "Staphylococcus_hominis",
+                                     "Staphylococcus_capitis",
+                                     "Streptococcus_mitis",
+                                     "Dermacoccus_nishinomiyaensis")),
+             aes(x=median_CSS_counts_healthy, y=median_CSS_counts_AD),
+             colour="red")
+
+AC_child_taxa_scatter
+
+ggsave("../plots/fig1a_AC_child_scatter.svg", plot=AC_child_taxa_scatter, width=10, height=7)
+
+```
+
+Figure 1A, right panel
+
+```{r fig1A_right, echo=FALSE}
+
+VF_child_CSS_scatter_input <- prepare_scatter_df_fn(VF_child_count_CSS, child_VF_CSS_wilcox_df )
+
+
+VF_child_taxa_scatter <- ggplot(VF_child_CSS_scatter_input, aes(x=median_CSS_counts_healthy, y=median_CSS_counts_AD)) + geom_text_repel(aes(label=species)) + geom_point()+
+  geom_abline(intercept=0, slope =1) +
+    theme_classic() + xlim(5, 10) + ylim(5, 10)
+
+VF_child_taxa_scatter
+
+ggsave("../plots/fig1a_VF_child_scatter.svg", plot=VF_child_taxa_scatter, width=10, height=7)
+
+```
+
+Density plots (area = 1) of "Staphylococcus_aureus", "Staphylococcus_hominis" and "Dermacoccus_nishinomiyaensis" for metagenomes of caregivers
+
+Figure 1B
+
+```{r fig1B, echo = FALSE}
+
+AC_saureus_density <- density_plot_fn(var="Staphylococcus_aureus",
+                                       df=AC_caregiver_count_CSS,
+                                       title="Caregiver AC")
+
+VF_saureus_density <- density_plot_fn(var="Staphylococcus_aureus",
+                                       df=VF_caregiver_count_CSS,
+                                       title="Caregiver VF")
+
+AC_shom_density <- density_plot_fn(var="Staphylococcus_hominis",
+                                       df=AC_caregiver_count_CSS,
+                                       title="Caregiver AC")
+
+VF_shom_density <- density_plot_fn(var="Staphylococcus_hominis",
+                                       df=VF_caregiver_count_CSS,
+                                       title="Caregiver VF")
+
+AC_Dnishino_density <- density_plot_fn(var="Dermacoccus_nishinomiyaensis",
+                                       df=AC_caregiver_count_CSS,
+                                       title="Caregiver AC")
+
+VF_Dnishino_density <- density_plot_fn(var="Dermacoccus_nishinomiyaensis",
+                                       df=VF_caregiver_count_CSS,
+                                       title="Caregiver VF")
+
+
+all_density_plots <- plot_grid(AC_saureus_density, 
+                              AC_shom_density,
+                              AC_Dnishino_density,
+                              VF_saureus_density,
+                              VF_shom_density,
+                              VF_Dnishino_density,
+                              nrow=2, ncol=3, labels = "AUTO", label_size = 12)
+
+
+
+all_density_plots
+
+ggsave(plot=all_density_plots, filename="../plots/fig1b_density_plots.svg", width=18, height=6 )
+
+```
+
+Plot Shannon diversity
+
+Figure 1C
+
+```{r fig1C, echo=FALSE}
+
+###Shannon###
+
+t_subjects_bracken_renorm <- setNames(data.frame(t(subjects_bracken_renorm_df[,-1])), subjects_bracken_renorm_df$LibraryID)
+
+SDI <- apply(t_subjects_bracken_renorm,2, diversity, index="shannon")
+
+subjects_bracken_renorm_shannon <- data.frame(LibraryID=subjects_bracken_renorm_df$LibraryID,
+                                              index=SDI)
+
+
+subjects_bracken_renorm_shannon <- merge(subjects_bracken_renorm_shannon, metadata, by = "LibraryID")
+
+write_tsv(subjects_bracken_renorm_shannon, file="../data/processed/subjects_bracken_renorm_shannon.tsv")
+
+
+children_shannon_boxplot <- get_index_boxplot(subjects_bracken_renorm_shannon,
+                                                            comparison = "child",
+                                                            index="shannon")
+children_shannon_boxplot
+
+ggsave(plot=children_shannon_boxplot, filename="../plots/fig1c_child_shannon.svg",
+        width=18, height=9)
+
+```
+
+

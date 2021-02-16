@@ -1,0 +1,89 @@
+---
+title: "figS1"
+author: "Minghao Chia"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+```{r}
+library(tidyverse)
+library(here)
+library(ggpubr)
+library(vegan)
+library(ggrepel)
+```
+
+
+Principal coordinates analysis (PCoA) diagram using species level Bray-Curtis dissimilarity, showing that metagenomes do not clearly separate by sequencing batch.
+
+Read in data.
+
+```{r}
+
+#Load in bracken relative abundances. Abundances renormalized after removing human fraction and contaminants
+subjects_bracken_renorm_df <- read_tsv("../data/processed/subjects_bracken_renorm_df", col_names = TRUE)
+
+#load in metadata information and remove Libraries with < 10K read pairs after removal of human reads mapping to human genome
+metadata <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE) %>%
+  filter(after_decont >= 10000)
+
+```
+
+
+```{r functions}
+PCOA_plot_fn <- function(df, marker){
+  marker_quo <- enquo(marker)
+  ggplot(df, aes(X, Y, label = !!marker_quo)) +
+  geom_text_repel( aes(colour = factor(sample_category)), size =6 ) +
+  theme_classic() +
+  labs(x=paste0('PCoA1 (',round(subjects_pcoa_eigen[1], 1),'%)'),
+       y=paste0('PCoA2 (',round(subjects_pcoa_eigen[2], 1),'%)')) +
+  scale_color_manual(values = c("blue", "red")) +
+    geom_density_2d(stat = "density2d",inherit.aes = TRUE, colour="black") +
+    facet_grid(body_region ~ .) +    #a formula to facet_grid(), of the form vertical ~ horizontal.
+    theme(
+        panel.border = element_rect(color = "black", fill = NA, size = 1))
+}
+
+```
+
+Do PCoA
+
+```{r subjects_PCOA, echo=FALSE}
+
+subjects_pcoa_mat <- subjects_bracken_renorm_df %>% dplyr::select(-c(LibraryID)) %>% data.frame(.)
+#Add row names to contain the subj_region_labels after converting to matrix
+row.names(subjects_pcoa_mat) <- make.names(subjects_pcoa_mat$subj_region_label, unique=TRUE)
+
+subjects_pcoa_mat <- data.matrix(subset(subjects_pcoa_mat, select=-subj_region_label)) 
+
+#Get distance matrix in terms of Bray Curtis (BC) disimilarity  
+subjects_pcoa_BC <- vegdist(subjects_pcoa_mat, method = "bray")
+save(subjects_pcoa_BC, file="../data/processed/subjects_pcoa_BC.Rdata")
+
+#perform multi-dimensional scaling on the distance matrix using this function
+subjects_pcoa_cmds <- cmdscale(subjects_pcoa_BC, eig =TRUE, x.ret = TRUE)
+
+#calculate the amount of variation each axis in the MDS plot accounts for, using the eigen values
+subjects_pcoa_eigen <- round(subjects_pcoa_cmds$eig / sum(subjects_pcoa_cmds$eig) * 100, 1) 
+
+#Format the data for making MDS plots in ggplot
+subjects_mds.values  <- subjects_pcoa_cmds$points
+subjects_mds.data <- data.frame(subj_region_label=rownames(subjects_mds.values), X=subjects_mds.values[,1], Y=subjects_mds.values[,2]) %>% merge(metadata, by = "subj_region_label" )
+
+```
+
+Figure S1B
+
+```{r echo=FALSE, fig.width=14, fig.height=12}
+PCOA_plot_fn(subjects_mds.data %>% filter(body_region %in% c("AC", "VF")), marker=batch)
+
+ggsave(filename="../plots/figS1b_batch_PCoA.eps", plot=last_plot(), width=10, height=15)
+
+```
+

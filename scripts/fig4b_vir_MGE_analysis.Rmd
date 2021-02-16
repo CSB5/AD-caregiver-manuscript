@@ -1,0 +1,263 @@
+---
+title: "fig4b_vir_MGE_analysis"
+author: "Minghao Chia"
+date: "4/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rentrez)
+library(here)
+
+```
+
+This analysis checks for presence or absence of virulence genes in
+mobile genetic elements (MGEs) in the short reads of S aureus isolates. 
+
+Load in the S aureus virulence factors in MGEs from data/processed
+
+```{r load_factors, message=FALSE}
+all_factors <- read_tsv("../data/processed/s_aureus_virulence_factors.txt")
+
+vir_factors <- all_factors %>% filter(Type=="gene")
+
+MGEs <- all_factors %>% filter(Type=="MGE")
+
+
+```
+
+Download sequences from NCBI nucleotide db using entrez_fetch. I set eval to false since this only needs to be downloaded once.
+
+```{r fetch, echo=FALSE, eval = FALSE}
+
+#input (x) can be vir_factors or MGEs
+
+fetch_fasta <- function(x){
+  #list of FASTA sequences
+  output_list <- list()
+
+  for (i in 1:nrow(x)){
+    if(is.na(x[i, "seq_start"])){
+      sequence <- entrez_fetch(db="nuccore", id=x$Accession[i], rettype = "fasta")
+    }else{
+      sequence <- entrez_fetch(db="nuccore", 
+                               id=x[i,"Accession"], 
+                               rettype = "fasta",
+                               seq_start=x$seq_start[i],
+                               seq_stop=x$seq_stop[i])
+    }
+    
+    output_list[[i]] <- sequence
+    names(output_list)[i] <- x$Name[i]
+  }
+  return(output_list)
+}
+
+vir_fasta <- fetch_fasta(vir_factors)
+
+MGE_fasta <- fetch_fasta(MGEs)
+
+#Save the fasta files in the data/processed folder
+#https://stackoverflow.com/questions/36933590/how-to-write-files-with-unix-end-of-lines-on-r-for-windows/42818567
+#need to open write|binary mode "wb" in file connections to save output with unix type line endings
+
+#lapply(names(vir_fasta), function(x){
+  #output.file <- file(paste0("../data/processed/vir_fasta/",x,".fa"), "wb")
+  #write(vir_fasta[[x]], file=output.file)
+  #close(output.file)
+#})
+
+#lapply(names(MGE_fasta), function(x){
+  #output.file <- file(paste0("../data/processed/MGE_fasta/",x,".fa"), "wb")
+  #write(MGE_fasta[[x]], file=output.file)
+  #close(output.file)
+#})
+
+
+```
+
+Next, use the command line to concatenate them into a multi_fasta file, while changing the fasta headers to reflect the names of the virulence genes.
+
+The bash code used for this task was...
+
+(run from the /data/processed/ subfolder)
+
+for filename in `ls ./vir_fasta`; do printf ">${filename%.fa}\n`sed 1d ./vir_fasta/"$filename"`\n" >> multi_vir_genes.fa; done
+
+for filename in `ls ./MGE_fasta`; do printf ">${filename%.fa}\n`sed 1d ./MGE_fasta/"$filename"`\n" >> multi_MGE.fa; done  
+
+Use srst2 to find gene presence/absence based on those multi-fasta files
+
+Load srst2 output 
+
+```{r load_genome_cov, echo=FALSE, message=FALSE}
+#load in genome cov for virulence factors as a list, output from srst2.
+# These files (from srst2 output) report the details of sequences provided in fasta files via --genes_db that are detected above the minimum %coverage theshold set by --min_coverage (default 90).
+
+
+vir_genome_cov_files <- list.files(path="../data/raw/srst2_vir_out/",
+                                   pattern="*__fullgenes__") 
+
+vir_genome_cov <- lapply(vir_genome_cov_files, function(x){
+ read_tsv(paste0("../data/raw/srst2_vir_out/",x),col_names=TRUE)
+})
+
+names(vir_genome_cov) <- vir_genome_cov_files %>% gsub(pattern="__fullgenes__multi_vir_genes__results.txt",
+                                                       replacement="", .)
+
+
+
+```
+
+
+Srst2 by default, defines "presence" as at least 90% of gene covered by reads with <10% divergence from the reference sequence (i.e. fewer than 100 SNPs in a gene of total length 1000 bp).
+
+
+Add gene presence/absence information as a binary variable of 0 or 1.
+
+```{r get_gene_presence}
+
+get_gene_presence_fn <- function(x){
+  sample_name <- x$Sample[1]
+  temp_df <- data.frame(gene=vir_factors$Name) #all the possible vir_factors
+  
+  output_df <- merge(x, temp_df, all.y=TRUE, by = "gene")
+  output_df$Sample <- sample_name
+  #add a column called feature_presence
+  output_df$feature_presence <- ifelse(is.na(output_df$coverage), 0, 1)
+  return(output_df)
+  
+}
+
+vir_genome_cov <- lapply(vir_genome_cov, get_gene_presence_fn)
+
+```
+
+Load in metadata to group isolates (52 which passed QC) by categories
+
+```{r load_metadata, message=FALSE}
+
+isolate_metadata <- read_tsv("../metadata/passQC_isolates_metadata.tsv")
+
+
+vir_factors_cov_summary <- do.call("rbind", vir_genome_cov) %>% rename(LibraryID = Sample) %>%
+  mutate(LibraryID=str_replace_all(LibraryID, "_fastpdecont",""))
+
+
+#add metadata information
+
+vir_factors_cov_plot_df <- merge(vir_factors_cov_summary, isolate_metadata,
+                                 by="LibraryID", all.x = TRUE)
+
+vir_factors_cov_plot_df$feature_presence <- as.factor(vir_factors_cov_plot_df$feature_presence)
+
+
+```
+
+Now make heatmaps. Virulence features on the vertical axis, Libraries on the horizontal axis
+
+Figure 4B
+
+```{r heatmaps, echo=FALSE}
+
+vir_factor_heatmap <- ggplot(data=vir_factors_cov_plot_df, aes(x=subj_site_label, y = gene, fill=feature_presence)) + geom_tile(colour ="white") + 
+  scale_fill_manual(values=c("white","steelblue")) + 
+  scale_x_discrete(expand = c(0, 0)) + 
+  scale_y_discrete(expand = c(0, 0)) + 
+  theme(axis.ticks = element_blank()) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.2, hjust=1)) +
+  theme(axis.title = element_blank()) +
+  theme(legend.position="none")
+
+vir_factor_heatmap
+
+ggsave(filename="../plots/fig4b_vir_factor_heatmap.svg", plot=vir_factor_heatmap, width = 20, height = 14 )
+
+```
+Do one-sided Fisher's exact test for enrichment of virulence genes in AD hse nasal_axila_groin samples vs control house nasal_axila_groin samples. 
+
+After adjusting for multiple comparisons, enterotoxins K, K2 and Q were statistically significant 
+
+
+```{r fisher_test}
+convert_fn <- function(x){
+  out <- as.numeric(as.character(x))
+  return(out)
+}
+
+get_contingency_table <- function(input=vir_factors_cov_plot_df){
+  AD_hse <- input %>% filter(child_disease_state==1)
+  ctrl_hse <- input %>% filter(child_disease_state==0)
+  
+  genes <- unique(input[["gene"]])
+  
+  #Initialize an empty output list, no need to define length
+  
+  output_list <- vector(mode = "list")
+  
+  for (i in genes){
+    genes_specific_for_AD <- AD_hse %>% filter(gene==i)
+    AD_hse_iso_count <- sum(convert_fn(genes_specific_for_AD$feature_presence)) #Number of isolates with the gene
+    AD_hse_iso_absence <- sum(convert_fn(genes_specific_for_AD$feature_presence) == 0) #Number of isolates without the gene
+    
+    genes_specific_for_ctrl <- ctrl_hse %>% filter(gene==i)
+    ctrl_hse_iso_count <- sum(convert_fn(genes_specific_for_ctrl$feature_presence)) 
+    ctrl_hse_iso_absence <- sum(convert_fn(genes_specific_for_ctrl$feature_presence) == 0)
+    
+    contingency_table <- matrix(c(AD_hse_iso_count,
+                                  AD_hse_iso_absence,
+                                  ctrl_hse_iso_count,
+                                  ctrl_hse_iso_absence), nrow = 2)
+    row.names(contingency_table) <- c("present", "absent")
+    
+    colnames(contingency_table) <- c("AD_hse", "healthy_hse")
+    
+    
+    output_list[[i]] <- contingency_table
+    
+  }
+  
+  return(output_list)
+}
+
+
+fisher_test_input <- get_contingency_table()
+
+#Drop toxins by prevalence filter
+drop_toxins <- function(x){
+  mask <- vector(length=length(x))
+    for (i in 1:length(x)){
+    if (sum(x[[i]][1,])<= (0.85*52) & sum(x[[i]][1,])>= (0.15*52)){
+      mask[[i]] <- TRUE
+    } else {
+      mask[[i]] <- FALSE
+    }
+    }
+  return(x[mask])
+}
+
+#Which are significant after adjustment? 
+report_p_vals <- function(x=fisher_test_results){
+  vir_names <- vector(length=length(x))
+  p_val <- vector(length=length(x))
+  
+  for(i in 1:length(x)){
+  vir_names[[i]] <- names(x[i])
+  p_val[[i]] <- x[[i]]$p.value
+  }
+  
+  df_out <- data.frame(vir_factor=vir_names, p_value=p_val)
+  df_out$padj <- p.adjust(df_out$p_value, method="fdr")
+  return(df_out)
+  
+}
+
+fisher_test_input_filtered <- drop_toxins(fisher_test_input)
+
+fisher_test_results <- lapply(fisher_test_input_filtered, fisher.test, alternative="greater")
+
+fisher_test_results_format <- report_p_vals(fisher_test_results) 
+
+```

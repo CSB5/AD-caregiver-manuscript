@@ -1,0 +1,207 @@
+---
+title: "figS2_analysis"
+author: "Minghao Chia"
+date: "2/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+
+```{r}
+library(tidyverse)
+library(here)
+library(vegan)
+library(ggpubr)
+```
+
+Read in data
+
+```{r}
+bracken_s_t_df <- read.table("../data/processed/bracken_s_readcounts_t_df")
+metadata <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE) %>%
+  filter(after_decont >= 10000)
+
+#contains the Shannon diversities
+subjects_bracken_renorm_shannon <- read_tsv("../data/processed/subjects_bracken_renorm_shannon.tsv")
+
+```
+
+Load functions.
+
+```{r}
+
+##violin plots of AC or VF (caregiver or child), rarefied species richness
+#site can be "VF" or "AC
+rarefy_plot_fn <- function(x=rarefy_plot_df, site){
+  df <- x %>% filter(body_region==site)
+  
+  if(site=="VF"){
+     df$plot_category <- factor(df$plot_category, 
+                                levels = c("VF_caregiver_AD_house", 
+                                           "VF_caregiver_Healthy_house",
+                                           "VF_child_AD_house",
+                                           "VF_child_Healthy_house"
+                                           ))
+     stat_comparisons <- list( c("VF_caregiver_AD_house", 
+                            "VF_caregiver_Healthy_house"), 
+                          c("VF_child_AD_house", 
+                            "VF_child_Healthy_house"))
+  } else if(site=="AC"){
+      df$plot_category <- factor(df$plot_category, 
+                                levels = c("AC_caregiver_AD_house", 
+                                           "AC_caregiver_Healthy_house",
+                                           "AC_child_AD_house",
+                                           "AC_child_Healthy_house"
+                                           ))
+      stat_comparisons <- list( c("AC_caregiver_AD_house", 
+                            "AC_caregiver_Healthy_house"), 
+                          c("AC_child_AD_house", 
+                            "AC_child_Healthy_house"))
+  }
+  
+  ggplot(df, aes(x=plot_category, y = rarefied_species_no)) + 
+     geom_violin(aes(fill=child_disease_state)) +
+     geom_boxplot(width=0.3) +
+     theme_classic()+
+     ylab("Species richness") +
+     theme(axis.title.x = element_blank()) + 
+      theme(legend.position = "none")+
+     stat_compare_means(paired = FALSE, 
+                        method = "wilcox.test", comparisons=stat_comparisons) +
+     ggtitle(site)
+
+}
+
+#For the following function, comparison can be "child", "caregiver", "healthy" or "disease", 
+#x can be subjects_bracken_renorm_shannon
+#index can be either "shannon" or "simpson (mainly for ggplot title)
+
+get_index_boxplot <- function(x, comparison, index){
+  x$plotting_category <- paste0(x$sample_category,"_",x$body_region)
+  x$plotting_category <- ifelse(x$child_disease_state==1, paste0("AD_",x$plotting_category), paste0("healthy_",x$plotting_category))
+  
+  if(comparison=="child"){ #exclude lesions
+    df <- x %>% filter(sample_category=="child" & body_region != "LE" )
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('healthy_child_VF','AD_child_VF',
+               'healthy_child_AC', 'AD_child_AC',
+               'healthy_child_CH', 'AD_child_CH'), ordered = TRUE)
+    
+      my_comparisons <- list(c("healthy_child_VF", "AD_child_VF"), 
+                          c("healthy_child_AC", "AD_child_AC"),
+                        c("healthy_child_CH", "AD_child_CH"))
+    }
+  else if (comparison=="caregiver") {
+    df <- x %>% filter(sample_category=="caregiver")
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('healthy_caregiver_VF', 'AD_caregiver_VF', 
+               'healthy_caregiver_AC', 'AD_caregiver_AC'), ordered = TRUE)
+     my_comparisons <- list( c("healthy_caregiver_VF", "AD_caregiver_VF"), 
+                          c("healthy_caregiver_AC", "AD_caregiver_AC"))
+    }
+  else if (comparison=="healthy"){
+     df <- x %>% filter(child_disease_state=="0")
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('healthy_child_VF','healthy_child_AC', 'healthy_child_CH',
+               'healthy_caregiver_VF','healthy_caregiver_AC'), ordered = TRUE)
+     my_comparisons <- list( c("healthy_child_VF", "healthy_caregiver_VF"), 
+                          c("healthy_child_AC", "healthy_caregiver_AC"))
+    }
+    else if (comparison=="disease"){
+     df <- x %>% filter(child_disease_state=="1")
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('AD_child_VF', 'AD_child_AC', 'AD_child_CH', 'AD_child_LE', 
+               'AD_caregiver_VF','AD_caregiver_AC'), ordered = TRUE)
+    my_comparisons <- list( c("AD_child_VF", "AD_caregiver_VF"), 
+                          c("AD_child_AC", "AD_caregiver_AC"))
+    }
+  
+  if(index=="shannon"){
+    axis_title <- "Shannon diversity"
+  } else if(index=="simpson") {
+    axis_title <- "Simpson diversity"
+  }
+  
+  
+  plot <- ggplot(df, aes(x=plotting_category, y=index)) + geom_boxplot() + theme_classic() + 
+  stat_compare_means(paired = FALSE, method = "wilcox.test", comparisons=my_comparisons) +
+  ylab(axis_title) + 
+    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 45, hjust=1))
+  return(plot)
+  
+}
+```
+
+Plot effective species number against approximate microbial reads
+
+FigS1A
+
+```{r echo=FALSE}
+
+effective_species_no_plot <- ggplot(data=subjects_bracken_renorm_shannon,
+       aes(x=after_decont, y=exp(index))) + geom_point() +
+  theme_classic() + xlab("Reads after decont") + ylab("Effective species number")
+
+effective_species_no_plot
+
+ggsave(filename = "../plots/figS2a_effective_species_no.svg" ,plot=effective_species_no_plot, width=18, height=10)
+
+```
+
+
+
+Plot Shannon diversity for metagenomes of caregivers
+
+FigS2B
+
+```{r echo=FALSE}
+
+caregiver_shannon_boxplot <- get_index_boxplot(subjects_bracken_renorm_shannon,
+                                                             comparison = "caregiver", 
+                                                             index="shannon" )
+caregiver_shannon_boxplot
+
+ggsave(filename = "../plots/figS2b_caregiver_shannon.svg" ,plot=caregiver_shannon_boxplot, width=18, height=10)
+```
+
+
+Plot species richness for different categories of metagenomes
+
+Fig S2C
+
+```{r echo=FALSE}
+
+set.seed(100)
+S <- specnumber(bracken_s_t_df) ### rowSums(bracken_s_t_df > 0) does the same...
+raremax <- min(rowSums(bracken_s_t_df)) #number of counts across each library (as a row). Raremax is now 12006
+Srare <- rarefy(bracken_s_t_df, raremax)
+
+rarefy_plot_df <- data.frame(obs_species_no=S, rarefied_species_no=Srare)
+rarefy_plot_df$LibraryID <- row.names(rarefy_plot_df)
+rarefy_plot_df <- merge(rarefy_plot_df, metadata, by = "LibraryID")
+
+rarefy_plot_df$child_disease_state <- ifelse(rarefy_plot_df$child_disease_state == 0, yes="Healthy_house", no="AD_house")
+
+rarefy_plot_df$plot_category <- paste(rarefy_plot_df$body_region,
+                                      rarefy_plot_df$sample_category,
+                                      rarefy_plot_df$child_disease_state,
+                                      sep="_")
+
+
+VF_richness <- rarefy_plot_fn(site="VF")
+AC_richness <- rarefy_plot_fn(site="AC")
+
+VF_richness
+ggsave(filename = "../plots/figS2c_VF_richness.svg" ,plot=VF_richness, width=18, height=10)
+AC_richness
+ggsave(filename = "../plots/figS2c_AC_richness.svg" ,plot=AC_richness, width=18, height=10)
+
+
+```
+
+
+

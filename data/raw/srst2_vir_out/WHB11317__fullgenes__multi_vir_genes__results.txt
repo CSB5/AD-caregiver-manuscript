@@ -1,0 +1,12 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11317_fastpdecont	multi_vir_genes	Enterotoxin_N_sen	Enterotoxin_N_sen	95.899	20.789	31holes	edge2.0	0.0	756	0.5	Enterotoxin_N_sen	Enterotoxin_N_sen	
+WHB11317_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	64.288	3snp		0.61	492	0.111	Staphylokinase_sak	Staphylokinase_sak	
+WHB11317_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	33.324	8snp		2.319	345	0.087	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11317_fastpdecont	multi_vir_genes	Enterotoxin_B_seb	Enterotoxin_B_seb	99.875	30.507	20snp1indel	edge1.0	2.497	801	0.1	Enterotoxin_B_seb	Enterotoxin_B_seb	
+WHB11317_fastpdecont	multi_vir_genes	Enterotoxin_M_sem	Enterotoxin_M_sem	100.0	40.254	2snp	edge2.0	0.278	720	0.292	Enterotoxin_M_sem	Enterotoxin_M_sem	
+WHB11317_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	97.943	61.734	26snp24holes	edge0.0	2.275	1167	0.091	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11317_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	100.0	135.108	35snp		1.228	2851	0.083	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11317_fastpdecont	multi_vir_genes	Enterotoxin_G_seg	Enterotoxin_G_seg	97.426	10.971	20holes	edge0.0	0.0	777	0.333	Enterotoxin_G_seg	Enterotoxin_G_seg	
+WHB11317_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	52.665	53snp		5.521	960	0.083	a-hemolysin_hla	a-hemolysin_hla	
+WHB11317_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	106.04	6snp		1.84	326	0.077	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WHB11317_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	90.173	14.731	17snp74holes	edge0.0	2.504	753	0.5	Enterotoxin_A_sea	Enterotoxin_A_sea	

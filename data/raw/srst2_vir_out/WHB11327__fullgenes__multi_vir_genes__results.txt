@@ -1,0 +1,23 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11327_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	89.686	1snp		0.366	273	0.056	Bacteriocin_bsa	Bacteriocin_bsa	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_M_sem	Enterotoxin_M_sem	100.0	114.759	1snp		0.139	720	0.159	Enterotoxin_M_sem	Enterotoxin_M_sem	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_L2_sel2	Enterotoxin_L2_sel2	99.862	181.887	4snp1indel		0.553	723	0.094	Enterotoxin_L2_sel2	Enterotoxin_L2_sel2	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_O_seo	Enterotoxin_O_seo	100.0	113.45		edge1.0	0.0	783	0.333	Enterotoxin_O_seo	Enterotoxin_O_seo	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_L_sel	Enterotoxin_L_sel	99.862	181.894	4snp1indel		0.553	723	0.083	Enterotoxin_L_sel	Enterotoxin_L_sel	
+WHB11327_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	219.921	4snp		0.813	492	0.044	Staphylokinase_sak	Staphylokinase_sak	
+WHB11327_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	93.128	166.675	140snp4indel164holes		6.178	2430	0.143	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WHB11327_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	99.965	398.038	43snp1indel		1.508	2851	0.04	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	99.734	122.005	24snp3indel		3.187	753	0.118	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_N_sen	Enterotoxin_N_sen	100.0	102.318			0.0	756	0.077	Enterotoxin_N_sen	Enterotoxin_N_sen	
+WHB11327_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	81.312	5snp		1.449	345	0.044	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11327_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	363.058	3snp		0.92	326	0.025	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_G_seg	Enterotoxin_G_seg	100.0	39.784			0.0	777	0.118	Enterotoxin_G_seg	Enterotoxin_G_seg	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_C3_sec3	Enterotoxin_C3_sec3	97.503	141.003	21snp20holes	edge1.0	2.689	801	0.083	Enterotoxin_C3_sec3	Enterotoxin_C3_sec3	
+WHB11327_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	255.511	48snp		5.0	960	0.014	a-hemolysin_hla	a-hemolysin_hla	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	97.964	102.283	16snp16holes		2.078	786	0.111	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	
+WHB11327_fastpdecont	multi_vir_genes	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	100.0	72.206	2snp		0.444	450	0.2	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_C4_sec4	Enterotoxin_C4_sec4	100.0	172.889	17snp		2.122	801	0.111	Enterotoxin_C4_sec4	Enterotoxin_C4_sec4	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_I_sei	Enterotoxin_I_sei	100.0	71.993	11snp		1.509	729	0.444	Enterotoxin_I_sei	Enterotoxin_I_sei	
+WHB11327_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	201.374	21snp		1.799	1167	0.069	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11327_fastpdecont	multi_vir_genes	SaPI4_ear_gene	SaPI4_ear_gene	100.0	63.451			0.0	555	0.143	SaPI4_ear_gene	SaPI4_ear_gene	
+WHB11327_fastpdecont	multi_vir_genes	Enterotoxin_C_sec	Enterotoxin_C_sec	97.503	141.003	21snp20holes	edge1.0	2.689	801	0.083	Enterotoxin_C_sec	Enterotoxin_C_sec	

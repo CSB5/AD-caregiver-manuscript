@@ -1,0 +1,188 @@
+---
+title: "fig3a_bray_curtis_plots"
+author: "Minghao Chia"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+```{r}
+library(tidyverse)
+library(here)
+library(ggpubr)
+library(reshape2)
+```
+
+Read in data.
+
+```{r}
+metadata <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE) %>%
+  filter(after_decont >= 10000)
+load(file="../data/processed/subjects_pcoa_BC.Rdata") #subjects_pcoa_BC
+```
+
+Load functions
+
+```{r}
+
+###Remove mirror comparisons i.e reciprocal comparisons using a function, taking subjects_BC_pairwise
+#The function takes subjects_BC_pairwise as an input. Set "Var1" as strictly for the children. 
+#Set "Var2" as strictly for the caregivers. 
+
+remove_mirror_comparisons_fn <- function(x){
+  x <- filter(x, Var1_sample_cat == "child")
+  list_by_Var1 <- split(x, f= x$Var1 )  #splitting removes mirror comparisons
+  
+  #Now select for pairs for which Var2_sample_cat is "caregiver"
+  
+  list_by_Var1_Var2 <- lapply(list_by_Var1, function(input){
+    return(input %>% group_by(Var1) %>% subset(Var1_sample_cat != Var2_sample_cat)) 
+  })
+    
+  output <- do.call("rbind", list_by_Var1_Var2)
+  return(output)
+}
+
+#############################################################
+
+#Avoid using rbind from base R when dealing with tibbles. Use dplyr::bind_rows() instead
+#body_region can be either "VF", "AC", "LE" or "CH" and must be specified for both child and caregiver
+#disease_state is either 0 (healthy) or 1 (AD)
+#Input/x is the subjects_BC_no_mirrors dataframe
+
+match_for_boxplot_fn <- function(x, child_body_region, caregiver_body_region, disease_state){
+  child_body_region <- enquo(child_body_region)
+  caregiver_body_region <- enquo(caregiver_body_region)
+  disease_state <- enquo(disease_state)
+  same_hse <- x %>% filter(Var1_region == !!child_body_region & Var2_region == !!caregiver_body_region) %>%
+    filter(Var1_child_disease_state == !!disease_state, Var2_child_disease_state == !!disease_state) %>%
+    filter(Var1_hse_grp == Var2_hse_grp)
+  
+  diff_hse <- all_discordant_pairs %>% 
+    filter(Var1_region == !!child_body_region & Var2_region == !!caregiver_body_region) %>% 
+    filter(Var1_child_disease_state == !!disease_state, Var2_child_disease_state == !!disease_state)
+  
+  same_hse$comparator <- ifelse(same_hse$Var1_child_disease_state == 0 &
+                                           same_hse$Var2_child_disease_state == 0, 
+                                           "healthy_matched_house", "AD_matched_house")
+  
+  
+  diff_hse$comparator <- ifelse(diff_hse$Var1_child_disease_state == 0 &
+                                           diff_hse$Var2_child_disease_state == 0, 
+                                           "healthy_unmatched_house", "AD_unmatched_house")
+    
+  output <- dplyr::bind_rows(same_hse, diff_hse)  #do not use rbind()
+  return(output)
+}
+
+####################################################################
+
+#Get all discordant pairs (different hse_grp, different sample_cat (child vs caregiver)) per unique sample in "Var1". Note that "Var1" refers to children, "Var2 refers to caregivers
+#The function takes subjects_BC_no_mirrors as an input. Value refers to the Bray Curtis distance between the pairs.
+get_all_discordant_pairs_fn <- function(x){
+  discordant <- x %>% group_by(Var1) %>% subset(Var1_hse_grp != Var2_hse_grp ) %>% 
+    subset(Var1_sample_cat != Var2_sample_cat) 
+  return(discordant)
+}
+
+
+```
+
+Format the dist matrices and dataframes.
+
+```{r}
+
+#Melt the distance matrix of BC scores
+# By dropping zero, we remove all self-comparisons
+subjects_BC_pairwise <- subset(melt(as.matrix(subjects_pcoa_BC)), value!=0)
+
+#Add meta info for subsetting (say healthy vs diseased households)
+
+subjects_BC_pairwise <- metadata %>% subset(select = c(body_region, sample_category, hse_grp, subj_region_label, child_disease_state )) %>%
+  rename(Var1_region = body_region, Var1_sample_cat = sample_category, Var1_hse_grp= hse_grp , Var1 = subj_region_label, Var1_child_disease_state = child_disease_state) %>%
+  merge(subjects_BC_pairwise, by = "Var1")
+
+
+subjects_BC_pairwise <- metadata %>% subset(select = c(body_region, sample_category, hse_grp, subj_region_label, child_disease_state )) %>%
+  rename(Var2_region = body_region, Var2_sample_cat = sample_category, Var2_hse_grp= hse_grp , Var2 = subj_region_label, Var2_child_disease_state = child_disease_state) %>%
+  merge(subjects_BC_pairwise, by = "Var2")
+
+subjects_BC_no_mirrors <- remove_mirror_comparisons_fn(subjects_BC_pairwise)
+
+
+all_discordant_pairs <- get_all_discordant_pairs_fn(subjects_BC_no_mirrors)
+
+```
+
+
+Make boxplots of of Bray-Curtis distances. One boxplot for matched child-caregivers from same households, another boxplot for discordant child-caregivers from different households. 
+
+Compare volar forearm of children and parents in healthy and diseased households (VF, both matched and unmatched/discordant)
+
+```{r volar_BC_boxplots, echo=FALSE}
+
+
+healthy_VF_BC_df <- match_for_boxplot_fn(subjects_BC_no_mirrors, 
+                                         child_body_region = "VF", 
+                                         caregiver_body_region = "VF", 
+                                         disease_state = 0)
+
+AD_VF_BC_df <- match_for_boxplot_fn(subjects_BC_no_mirrors, 
+                                         child_body_region = "VF", 
+                                         caregiver_body_region = "VF", 
+                                         disease_state = 1)
+
+#Combine the above two dataframes
+all_VF_BC_df <- rbind(healthy_VF_BC_df, AD_VF_BC_df)
+
+
+
+my_comparisons <- list( c("healthy_unmatched_house", "healthy_matched_house"), 
+                        c("AD_unmatched_house", "healthy_matched_house"),
+                        c("AD_matched_house", "AD_unmatched_house"))
+
+#Make the plot
+
+VF_BC_boxplot <- ggplot(all_VF_BC_df, aes(x=comparator, y=value)) + geom_boxplot(fill=c("red", "red", "blue", "blue")) + theme_classic() + 
+  stat_compare_means(paired = FALSE, method = "wilcox.test", comparisons = my_comparisons) +
+  ylab("Bray-Curtis dissimilarity") +
+  ggtitle("Volar forearm (children vs caregivers)")
+
+VF_BC_boxplot
+
+ggsave(filename = "../plots/fig3a_VF_BC_boxplot.svg" ,plot=VF_BC_boxplot, width=18, height=10)
+```
+
+Compare antecubital fossae of children and parents in healthy and diseased households (AC, both matched and unmatched/discordant).
+
+
+```{r antecubital_BC_boxplots, echo = FALSE}
+
+healthy_AC_BC_df <- match_for_boxplot_fn(subjects_BC_no_mirrors, 
+                                         child_body_region = "AC", 
+                                         caregiver_body_region = "AC", 
+                                         disease_state = 0)
+
+AD_AC_BC_df <- match_for_boxplot_fn(subjects_BC_no_mirrors, 
+                                         child_body_region = "AC", 
+                                         caregiver_body_region = "AC", 
+                                         disease_state = 1)
+
+all_AC_BC_df <- rbind(healthy_AC_BC_df, AD_AC_BC_df)
+
+#Make the plot
+
+AC_BC_boxplot <- ggplot(all_AC_BC_df, aes(x=comparator, y=value)) + geom_boxplot(fill=c("red", "red", "blue", "blue")) + theme_classic() + 
+  stat_compare_means(paired = FALSE, method = "wilcox.test", comparisons = my_comparisons) +
+  ylab("Bray-Curtis dissimilarity") +
+  ggtitle("Antecubital fossae (children vs caregivers)")
+
+AC_BC_boxplot
+
+ggsave(filename = "../plots/fig3a_AC_BC_boxplot.svg" ,plot=AC_BC_boxplot, width=18, height=10)
+
+```

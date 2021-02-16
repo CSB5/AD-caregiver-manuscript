@@ -1,0 +1,13 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11354_fastpdecont	multi_vir_genes	Enterotoxin_N_sen	Enterotoxin_N_sen	100.0	41.937	20snp		2.646	756	0.091	Enterotoxin_N_sen	Enterotoxin_N_sen	
+WHB11354_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	99.634	36.653	9snp2indel		3.297	273	0.235	Bacteriocin_bsa	Bacteriocin_bsa	
+WHB11354_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	41.055	7snp		2.029	345	0.087	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11354_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	74.093	3snp		0.61	492	0.043	Staphylokinase_sak	Staphylokinase_sak	
+WHB11354_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	93.745	57.502	135snp4indel150holes		5.921	2430	0.5	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WHB11354_fastpdecont	multi_vir_genes	Enterotoxin_I_sei	Enterotoxin_I_sei	100.0	29.021	24snp	edge2.0	3.292	729	0.146	Enterotoxin_I_sei	Enterotoxin_I_sei	
+WHB11354_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	65.805	19snp	edge2.0	1.628	1167	0.045	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11354_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	100.0	121.742	1snp		0.035	2851	0.054	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11354_fastpdecont	multi_vir_genes	Enterotoxin_G_seg	Enterotoxin_G_seg	100.0	25.488	15snp		1.931	777	0.111	Enterotoxin_G_seg	Enterotoxin_G_seg	
+WHB11354_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	61.906	55snp		5.729	960	0.071	a-hemolysin_hla	a-hemolysin_hla	
+WHB11354_fastpdecont	multi_vir_genes	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	100.0	54.18			0.0	786	0.074	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	
+WHB11354_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	91.899	18.893	28snp61holes	edge0.0	4.046	753	0.091	Enterotoxin_A_sea	Enterotoxin_A_sea	

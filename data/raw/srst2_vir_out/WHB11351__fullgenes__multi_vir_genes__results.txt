@@ -1,0 +1,11 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11351_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	62.843	3snp		1.099	273	0.029	Bacteriocin_bsa	Bacteriocin_bsa	
+WHB11351_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	116.994			0.0	345	0.029	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11351_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	127.477			0.0	326	0.027	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WHB11351_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	100.615	2snp		0.407	492	0.037	Staphylokinase_sak	Staphylokinase_sak	
+WHB11351_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	123.394	1snp		0.086	1167	0.027	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11351_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	99.965	215.657	33snp1indel		1.157	2851	0.03	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11351_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	100.0	87.346			0.0	753	0.056	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WHB11351_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	156.764			0.0	960	0.023	a-hemolysin_hla	a-hemolysin_hla	
+WHB11351_fastpdecont	multi_vir_genes	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	99.948	127.873	16snp1holes		0.833	1921	0.093	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	
+WHB11351_fastpdecont	multi_vir_genes	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	100.0	172.967	5snp		0.102	4916	0.485	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	

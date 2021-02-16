@@ -1,0 +1,14 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11347_fastpdecont	multi_vir_genes	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	100.0	58.61	1snp		0.222	450	0.058	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	
+WHB11347_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	74.46			0.0	273	0.039	Bacteriocin_bsa	Bacteriocin_bsa	
+WHB11347_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	150.642	6snp		1.739	345	0.023	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11347_fastpdecont	multi_vir_genes	Enterotoxin_B_seb	Enterotoxin_B_seb	100.0	102.771	20snp		2.497	801	0.022	Enterotoxin_B_seb	Enterotoxin_B_seb	
+WHB11347_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	99.588	141.006	101snp1indel9holes		4.172	2430	0.498	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WHB11347_fastpdecont	multi_vir_genes	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	97.322	153.952	240snp10indel252holes		2.558	9635	0.489	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	
+WHB11347_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	124.158	7snp		0.6	1167	0.036	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11347_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	99.93	220.424	33snp2indel		1.157	2851	0.019	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11347_fastpdecont	multi_vir_genes	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	100.0	130.242	21snp		1.093	1921	0.127	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	
+WHB11347_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	150.758	5snp		0.521	960	0.034	a-hemolysin_hla	a-hemolysin_hla	
+WHB11347_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	126.3			0.0	326	0.017	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WHB11347_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	100.0	101.653	19snp		2.523	753	0.038	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WHB11347_fastpdecont	multi_vir_genes	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	100.0	172.063	53snp	edge2.0	1.078	4916	0.495	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	

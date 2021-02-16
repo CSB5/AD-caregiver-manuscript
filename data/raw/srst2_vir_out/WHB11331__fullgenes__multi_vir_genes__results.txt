@@ -1,0 +1,17 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11331_fastpdecont	multi_vir_genes	Enterotoxin_N_sen	Enterotoxin_N_sen	100.0	106.355			0.0	756	0.071	Enterotoxin_N_sen	Enterotoxin_N_sen	
+WHB11331_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	164.72	4snp		0.813	492	0.032	Staphylokinase_sak	Staphylokinase_sak	
+WHB11331_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	84.197	5snp		1.449	345	0.056	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11331_fastpdecont	multi_vir_genes	Enterotoxin_I_sei	Enterotoxin_I_sei	100.0	72.238	8snp	edge1.0	1.097	729	0.496	Enterotoxin_I_sei	Enterotoxin_I_sei	
+WHB11331_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	291.092	3snp		0.92	326	0.023	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WHB11331_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	94.949	1snp		0.366	273	0.068	Bacteriocin_bsa	Bacteriocin_bsa	
+WHB11331_fastpdecont	multi_vir_genes	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	100.0	74.836	2snp		0.444	450	0.07	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	
+WHB11331_fastpdecont	multi_vir_genes	Enterotoxin_M_sem	Enterotoxin_M_sem	100.0	115.81	1snp		0.139	720	0.264	Enterotoxin_M_sem	Enterotoxin_M_sem	
+WHB11331_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	94.362	132.09	143snp8indel132holes		6.223	2430	0.333	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WHB11331_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	187.109	21snp		1.799	1167	0.051	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11331_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	99.965	293.863	43snp1indel		1.508	2851	0.038	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11331_fastpdecont	multi_vir_genes	Enterotoxin_G_seg	Enterotoxin_G_seg	100.0	54.901			0.0	777	0.133	Enterotoxin_G_seg	Enterotoxin_G_seg	
+WHB11331_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	99.602	105.714	23snp4indel		3.054	753	0.167	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WHB11331_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	215.977	48snp		5.0	960	0.038	a-hemolysin_hla	a-hemolysin_hla	
+WHB11331_fastpdecont	multi_vir_genes	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	99.746	120.169	18snp2holes		2.296	786	0.063	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	
+WHB11331_fastpdecont	multi_vir_genes	Enterotoxin_O_seo	Enterotoxin_O_seo	100.0	121.709			0.0	783	0.167	Enterotoxin_O_seo	Enterotoxin_O_seo	

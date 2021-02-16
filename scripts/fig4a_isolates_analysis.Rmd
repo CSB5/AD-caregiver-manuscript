@@ -1,0 +1,136 @@
+---
+title: "Fig4a_isolates_analysis"
+author: "Minghao Chia"
+date: "2/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+
+```{r}
+library(tidyverse)
+library(ggdendro)
+library(here)
+library(ggtree)
+library(reshape2)
+```
+
+Read in data files. Note that isolate D12/HYT (WHB11472) only had 400K read pairs after sequencing and was thus not subject to genome assembly. This leaves 56 assemblies for downstream checkM analysis
+
+```{r}
+#load all isolate metadata (58)
+all_isolate_metadata <- read_tsv("../metadata/manuscript_isolates_metadata.tsv")
+
+#load checkM results for the 57 assemblies
+checkm_eval_dat <- read_tsv("../data/raw/checkM_out/final_checkm_eval_dat")
+
+#load fastANI results for the 57 assemblies
+fastANI <- read_tsv("../data/raw/fastANI_out/manuscript_fastANI_results")
+
+#load ANI results after running Mummer
+#To get the %ANI, refer to the mummer dist object, column X10.
+mummer_dist <- read_tsv("../data/raw/mummer_out/mummer_dist_sub.dat",
+                        col_names = FALSE)
+
+mummer_dist$pattern <- paste(mummer_dist$X1, mummer_dist$X2)
+
+```
+
+Filter the genomes for substantial completeness >= 70% and low contamination < 5%. Then exclude genomes with < 95% ANI compared to S. aureus reference genome (strain NCTC 8325) 
+
+WHB11346 was further excluded because it shared <80% of genome with WHB11334 (from mummer analysis), and WHB11334 had a higher ANI to the reference genome. 
+
+```{r}
+
+isolates_passQC <- checkm_eval_dat %>% filter(completeness >= 70 & contamination <= 5) %>% filter(bin_id %in% (fastANI %>% filter(X2 >= 95) %>% pull(X1))) %>% filter(bin_id != "WHB11346") #52 genomes left
+
+#final metadata for 52 isolates used in the analysis
+final_isolate_metadata <- all_isolate_metadata %>% filter(LibraryID %in% isolates_passQC$bin_id)
+
+```
+
+
+Do a Wilcoxon rank sum test on the %ANI for isolates from the nares, axila and groin of individuals from the same house (matching houses: 6 for AD group, 4 for control group)
+
+Note that the p-value is < 0.05, showing statistical significance. 
+
+
+```{r wilcox_test}
+AD_child_candidates <- c("A07_nasal_ax_groin", 
+                         "A08_nasal_ax_groin",
+                         "A11_nasal_ax_groin",
+                         "A15_nasal_ax_groin",
+                         "A17_nasal_ax_groin",
+                         "A18_nasal_ax_groin")
+
+AD_cg_candidates <- c("B07_nasal_ax_groin", 
+                         "B08_nasal_ax_groin",
+                         "B11_nasal_ax_groin",
+                         "B15_nasal_ax_groin",
+                         "B17_nasal_ax_groin",
+                         "B18_nasal_ax_groin")
+
+ctrl_child_candidates <- c("C02_nasal_ax_groin", 
+                         "C09_nasal_ax_groin",
+                         "C17_nasal_ax_groin",
+                         "C30_nasal_ax_groin")
+
+ctrl_cg_candidates <- c("D02_nasal_ax_groin", 
+                         "D09_nasal_ax_groin",
+                         "D17_nasal_ax_groin",
+                         "D30_nasal_ax_groin")
+
+AD_matching_vector <- vector()
+
+for (i in 1:length(AD_child_candidates)){
+  match1 <- AD_child_candidates[i]
+  match2 <- AD_cg_candidates[i]
+  
+  row_number_for_subset <- which(mummer_dist$pattern %in% c(paste(match1, match2), paste(match2, match1)))
+  
+  AD_matching_vector[i] <- row_number_for_subset
+}
+
+
+matched_AD_mummer_dist <- mummer_dist[AD_matching_vector,] %>% rename(percent_ANI=X10)
+
+matched_AD_mummer_dist$AD_hse <- 1
+
+ctrl_matching_vector <- vector()
+
+for (i in 1:length(ctrl_child_candidates)){
+  match1 <- ctrl_child_candidates[i]
+  match2 <- ctrl_cg_candidates[i]
+  
+  row_number_for_subset <- which(mummer_dist$pattern %in% c(paste(match1, match2), paste(match2, match1)))
+  
+  ctrl_matching_vector[i] <- row_number_for_subset
+}
+
+matched_ctrl_mummer_dist <- mummer_dist[ctrl_matching_vector,] %>% rename(percent_ANI=X10)
+
+matched_ctrl_mummer_dist$AD_hse <- 0
+
+wilcox.test(x=matched_AD_mummer_dist$percent_ANI, y=matched_ctrl_mummer_dist$percent_ANI)
+```
+
+Construct phylogenetic tree using Parsnp output
+
+```{r, parsnp_tree}
+
+parsnp_tree <- read.tree("../data/raw/parsnp_out/P_2020_11_20_103620407992/parsnp_sub.tree")
+
+parsnp_tree$tip.label <- gsub(parsnp_tree$tip.label, pattern=".fna", replacement="" )
+
+parsnp_dendrogram <- ggtree(parsnp_tree) + geom_treescale() + geom_tiplab(size=4, color="black")
+
+parsnp_dendrogram 
+
+ggsave("../plots/fig4a_parsnp_tree.pdf", plot=parsnp_dendrogram, width=35, height=12)
+
+
+```

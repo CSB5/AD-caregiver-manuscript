@@ -1,0 +1,17 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WHB11467_fastpdecont	multi_vir_genes	Enterotoxin_K2_sek2	Enterotoxin_K2_sek2	100.0	285.444			0.0	729	0.2	Enterotoxin_K2_sek2	Enterotoxin_K2_sek2	
+WHB11467_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	372.659	1snp		0.203	492	0.028	Staphylokinase_sak	Staphylokinase_sak	
+WHB11467_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	99.71	197.142	2snp1holes		0.581	345	0.043	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WHB11467_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	628.761			0.0	326	0.051	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WHB11467_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	148.318			0.0	273	0.08	Bacteriocin_bsa	Bacteriocin_bsa	
+WHB11467_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	96.502	392.647	91snp2indel84holes	edge0.0	3.879	2430	0.143	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WHB11467_fastpdecont	multi_vir_genes	Enterotoxin_K_sek	Enterotoxin_K_sek	100.0	279.958	21snp	edge1.0	2.881	729	0.2	Enterotoxin_K_sek	Enterotoxin_K_sek	
+WHB11467_fastpdecont	multi_vir_genes	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	90.441	376.041	244snp20indel906holes		2.795	9635	0.482	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	
+WHB11467_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	374.992	6snp		0.514	1167	0.045	Staphopain_A_scpA	Staphopain_A_scpA	
+WHB11467_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	100.0	706.817	36snp		1.263	2851	0.038	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WHB11467_fastpdecont	multi_vir_genes	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	99.948	357.737	15snp1holes		0.781	1921	0.32	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	
+WHB11467_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	100.0	234.117	18snp		2.39	753	0.065	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WHB11467_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	99.896	576.12	4snp1indel		0.417	960	0.017	a-hemolysin_hla	a-hemolysin_hla	
+WHB11467_fastpdecont	multi_vir_genes	Enterotoxin_B_seb	Enterotoxin_B_seb	100.0	210.055	20snp		2.497	801	0.075	Enterotoxin_B_seb	Enterotoxin_B_seb	
+WHB11467_fastpdecont	multi_vir_genes	Enterotoxin_Q_seq	Enterotoxin_Q_seq	100.0	225.259			0.0	729	0.16	Enterotoxin_Q_seq	Enterotoxin_Q_seq	
+WHB11467_fastpdecont	multi_vir_genes	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	100.0	491.52	27snp		0.549	4916	0.493	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	

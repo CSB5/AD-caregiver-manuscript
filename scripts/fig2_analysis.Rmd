@@ -1,0 +1,658 @@
+---
+title: "fig2A_modelling"
+author: "Minghao Chia"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+
+```{r}
+library(tidyverse)
+library(ggpubr)
+library(here)
+library(zCompositions)
+library(caret)
+library(gtools)
+library(MASS)
+library(doParallel)
+
+registerDoParallel(parallel::detectCores() - 1)
+
+```
+
+Read in data
+
+```{r load_data}
+
+metadata <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE) %>%
+  filter(after_decont >= 10000)
+
+bracken_MO_CSS_filtered_df <- read.table("../data/processed/bracken_MO_CSS_filtered_df")
+
+bracken_MO_CSS_filtered_df$AD_hse <- factor(bracken_MO_CSS_filtered_df$AD_hse, 
+                                           levels=c("Healthy_house", "AD_house"))
+
+
+#get a vector of all library IDs that belong to AD houses. Select can be masked by other packages, so specify dplyr::select
+
+AD_hses <- metadata %>% filter(child_disease_state==1) %>% dplyr::select(LibraryID)
+
+
+#load unnormalized counts classified by bracken, keeping only the taxa whose median relative abundances are above 0.01% 
+
+bracken_filtered_taxa_df <- read_tsv("../data/processed/bracken_filtered_taxa_df.tsv")
+
+#Load raw bracken read counts (kitome removed)
+
+#rows are taxa and columns are samples
+bracken_count_df <- read.table(file="../data/processed/bracken_readcounts_mat", header = T, comment = '', check = F, sep = ' ')
+
+#replace unnecessary symbols in taxa row names
+rownames(bracken_count_df) <- gsub(pattern="\\[|\\]", replacement="", rownames(bracken_count_df))
+
+
+
+```
+
+Load functions
+
+```{r}
+
+transpose_fn <- function(x){
+  replacement_colnames <- row.names(x)
+  output <- data.frame(t(x))
+  colnames(output) <- replacement_colnames
+  return(output)
+}
+
+##############################################################
+
+split_dataset_fn <- function(df=bracken_MO_CSS_filtered_df, mode){
+  if(mode == "VF_caregiver"){
+    samples_to_keep <- metadata %>% 
+      filter(sample_category=="caregiver",
+             body_region=="VF") %>% pull(LibraryID)
+  }else if(mode=="AC_caregiver"){
+     samples_to_keep <- metadata %>% 
+      filter(sample_category=="caregiver",
+             body_region=="AC") %>% pull(LibraryID)
+  }else if(mode=="VF_child"){
+     samples_to_keep <- metadata %>% 
+      filter(sample_category=="child",
+             body_region=="VF") %>% pull(LibraryID)
+  }else if(mode=="AC_child"){
+     samples_to_keep <- metadata %>% 
+      filter(sample_category=="child",
+             body_region=="AC") %>% pull(LibraryID)
+  } else if(mode=="AC"){
+     samples_to_keep <- metadata %>% 
+      filter(body_region=="AC") %>% pull(LibraryID)
+  } else if(mode=="VF"){
+     samples_to_keep <- metadata %>% 
+      filter(body_region=="VF") %>% pull(LibraryID)
+     }
+  
+  output <- df[which(row.names(df) %in% samples_to_keep),]
+  return(output)
+}
+
+##############################################################
+
+#function to convert relative abundance to log ratio of taxa (balances). Columns are taxa, rows are samples
+#Takes as an input, a dataframe of unnormalized counts or relative proportions, 
+#and a character argument for the numerator like "Staphylococcus_aureus" (default setting)
+
+# To use large 'n' for combinations, we need to change the default recursion limit
+options(expressions=1e5)
+
+get_multi_log_balances <- function(x, numerator="Staphylococcus_aureus"){
+  
+  #The output is a list of three dataframes. 
+  #The first is a dataframe with the balances for S.aureus/single taxa
+  #The second is a df with the balances for S.aureus/geometric mean of two taxa
+  #the third is a df with the balances for S.aureus/geometric mean of three taxa
+  output <- list()
+  
+  numerator_col_number <- which(colnames(x)== numerator) #returns a number
+  
+  #zero replacement using the cmultRepl function from from the zCompositions package), using method = "GBM"
+  
+  x_no_zeros <- cmultRepl(x, method="GBM") #returns a dataframe of imputed proportions
+  
+  log_proportions <-  log(x_no_zeros) 
+  
+  #vector of log transformed values of S aureus imputed proportions
+  #number of taxa in the numerator always == 1, Staph aureus by default 
+  numerator_vector <- log_proportions[,numerator_col_number]
+
+  denominator_data <- log_proportions[,-(numerator_col_number)]  #remove the Staph aureus numerator column
+  
+  rownames_to_append <- row.names(log_proportions)
+  
+  ########################################################## 
+  #get log ratios for a single valid taxa in the denominator
+  ##########################################################
+  single_taxa_balance <- denominator_data %>% 
+    mutate_all(~ sqrt(0.5)*(numerator_vector-(.)))  #0.5 is derived from (k1*k2)/(k1+k2), where k1 and k2 are the number of taxa in the numerator and denom respectively
+  
+  row.names(single_taxa_balance) <-  rownames_to_append
+  #Something in model functions break when there are dashes "-" in any column name
+  colnames(single_taxa_balance) <- gsub(pattern="-", replacement=".", colnames(single_taxa_balance))
+  
+  ######################################################################
+  #get log ratios for a combination of two valid taxa in the denominator
+  ######################################################################
+  
+  taxa_number <- length(colnames(denominator_data)) #excludes the S.aureus in the numerator
+  
+  #pairs_of_taxa is a dataframe with two columns, X1 and X2. Combinations is from the gtools package, this is the same as nCr
+  pairs_of_taxa <- data.frame(combinations(n=taxa_number, r = 2, v=colnames(denominator_data)))
+  
+  #initialize an empty dataframe to store the balances
+  double_taxa_balance <- data.frame(matrix(nrow = nrow(denominator_data), ncol = nrow(pairs_of_taxa)))
+  
+  for (i in 1:nrow(pairs_of_taxa)){
+  
+  taxa_1 <- as.character(pairs_of_taxa[i, 1]) #first member of the denominator
+  taxa_2 <- as.character(pairs_of_taxa[i, 2]) #second member of the denominator
+  
+  denominator_means <- (denominator_data[,taxa_1] + denominator_data[,taxa_2])/2  #equivalent to the geometric mean, since these are logs
+  balance <- sqrt(2/3)*(numerator_vector - denominator_means) #2/3 is derived from (k1*k2)/(k1+k2), where k1 and k2 are the number of taxa in the numerator and denom, This balance is a ratio of logs 
+  double_taxa_balance[, i] <- balance
+  attr(double_taxa_balance[,i], "denominator") <- c(taxa_1, taxa_2)
+  }
+  row.names(double_taxa_balance) <-  rownames_to_append
+   
+######################################################################
+  #get log ratios for a combination of three valid taxa in the denominator
+  ######################################################################
+  
+  #triplets_of_taxa is a dataframe with three columns, X1, X2 and X3. Combinations is from the gtools package, this is the same as nCr
+  triplets_of_taxa <- data.frame(combinations(n=taxa_number, r = 3, v=colnames(denominator_data)))
+  
+  #initialize an empty dataframe to store the balances
+  triple_taxa_balance <- data.frame(matrix(nrow = nrow(denominator_data), ncol = nrow(triplets_of_taxa)))
+  
+  for (i in 1:nrow(triplets_of_taxa)){
+  
+  taxa_1 <- as.character(triplets_of_taxa[i, 1]) #first member of the denominator
+  taxa_2 <- as.character(triplets_of_taxa[i, 2]) #second member of the denominator
+  taxa_3 <- as.character(triplets_of_taxa[i, 3]) #third member of the denominator
+  
+  denominator_means <- (denominator_data[,taxa_1] + denominator_data[,taxa_2] + denominator_data[,taxa_3])/3  #equivalent to the geometric mean, since these are logs
+  balance <- sqrt(3/4)*(numerator_vector - denominator_means) #3/4 is derived from (k1*k2)/(k1+k2), where k1 and k2 are the number of taxa in the numerator and denom, This balance is a ratio of logs 
+  triple_taxa_balance[, i] <- balance
+  attr(triple_taxa_balance[,i], "denominator") <- c(taxa_1, taxa_2, taxa_3)
+}
+  row.names(triple_taxa_balance) <-  rownames_to_append
+  
+  ###output is a list####
+  output <- tibble::lst(single_taxa_balance, double_taxa_balance, triple_taxa_balance)
+  
+  return(output)
+
+}
+##############################################################
+#Add AD_hse status as a column to the dataframes
+add_AD_status <- function(input_df){
+   input_df$AD_hse <- NA
+for (i in 1:nrow(input_df)){
+  if (row.names(input_df[i,]) %in% AD_hses$LibraryID){
+     input_df[i, "AD_hse"] <- 1
+  } else{
+     input_df[i, "AD_hse"] <- 0
+  }
+}
+
+input_df$AD_hse <- ifelse(input_df$AD_hse == 0, yes="Healthy_house", no="AD_house")
+input_df$AD_hse <- factor(input_df$AD_hse,
+                          levels=c("Healthy_house", "AD_house"))
+return(input_df)
+}
+
+##############################################################
+#function to select features (columns) given the most important feature in the 1 denominator model (compositional features)
+
+#input is a df like VF_caregiver_input[[2]] , taxa are a string or vector of important taxa
+
+retain_features <- function(input, taxa){
+  cols_to_subset <- vector()
+  starting_taxa_to_keep <- length(taxa)
+for (i in 1:(ncol(input)-1)){
+  if (sum(attr(input[,i], "denominator") %in% taxa) == length(taxa)){  #if the taxa are represented in the col
+    cols_to_subset[i] <- TRUE 
+    } else{
+     cols_to_subset[i] <- FALSE
+    }
+}
+  cols_to_subset[ncol(input)] <- TRUE  #To include the last column, which is the AD_hse column
+  
+  #output is a subsetted df
+  output <- input[,cols_to_subset]
+  return(output)
+
+}
+##############################################################
+
+#function for performing the repeated, resampled t-test as described in Nadeau and Bengio et al 2003 (https://link.springer.com/content/pdf/10.1023/A:1024068626366.pdf)  
+
+#input files are always caret::train objects. An example could be input1 being the balances model, and input2 being the CSS model. 
+
+modified_t_test_fn <- function(input1, input2){
+  model1 <- input1
+  model2 <- input2
+  model1_metrics <- model1[["resample"]] #Columns are ROC, Sens and Spec.
+  model2_metrics <- model2[["resample"]]
+  
+    #n is the total number of "runs", i.e. 30 for 3 X 10 fold cross validation
+    n = nrow(model1$resample)
+    # n1 is avg number of samples in training set, rounded to nearest int
+    n1 = floor(sum(lengths(model1$control$index))/(length(model1$control$index)))
+    #n2 is number of samples in test set
+    n2= nrow(model1$trainingData) - n1
+    
+    #Compute accuracy
+    model1_pred <- model1$pred
+    model1_pred_split <- split(model1_pred, f=model1_pred$Resample) #split predicted by training fold
+    model2_pred <-  model2$pred
+    model2_pred_split <- split(model2_pred, f=model2_pred$Resample)
+    
+    
+    #Compute the difference between the results
+    ROC_diff <- model1_metrics$ROC - model2_metrics$ROC
+    Sens_diff <- model1_metrics$Sens - model2_metrics$Sens
+    Spec_diff <- model1_metrics$Spec - model2_metrics$Spec
+    ACC_diff <- sapply(model1_pred_split, calc_accuracy) - sapply(model2_pred_split, calc_accuracy)
+    
+    differences <- tibble::lst(ROC_diff, Sens_diff, Spec_diff, ACC_diff)
+    variances <- lapply(differences, function(x) {var(x)} ) 
+    names(variances) <- names(differences)
+    #d_bar is the average of the differences
+    d_bar <- lapply(differences, function(x) {mean(x)} ) 
+    names(d_bar) <- names(differences)
+    var_mod <- lapply(variances, function(var){var *((1/n) + n2/n1)})
+    names(var_mod) <- names(differences)
+    t_statistic <- mapply(function(d_bar_value, var_mod_value){ t_stat <- d_bar_value/sqrt(var_mod_value)}, 
+                             d_bar, var_mod,
+                             SIMPLIFY = FALSE)
+    t_statistic <- lapply(t_statistic, abs)
+    names(t_statistic) <- names(differences)
+    p_val <- lapply(t_statistic, function(t_value){(1-pt(t_value, df=(n-1)))*2})
+    names(p_val) <- names(differences) 
+    output_list <- tibble::lst(differences, variances, d_bar, var_mod, t_statistic, p_val)
+    print(paste0("The size of n is ", n, ". The size of the training set is ",n1, ". The size of the test set is ", n2
+                 ))
+    return(output_list)
+    }
+
+##############################################################
+
+#accuracy = TP + TN / total number of predictions 
+# accuracy = (no of correct predictions/total number of predictions)
+#Below is a wrapper function for accuracy calculations
+
+calc_accuracy<- function(df){
+  total_predictions <- nrow(df)
+  correct_predictions = length(which(df$pred==df$obs))
+  accuracy= correct_predictions/total_predictions
+  return(accuracy)
+}
+##############################################################
+#shapiro test for distribution of accuracy scores
+acc_shapiro.test <- function(model){
+  shapiro.test(sapply(split(model$pred, 
+                            f=model$pred$Resample), 
+                      calc_accuracy)) 
+}
+
+##############################################################
+
+ratio_boxplot_fn <- function(df, title, y_axis="A/H ratio"){
+ ggplot(df, aes(x=AD_hse, y = Staphylococcus_hominis)) + 
+     geom_boxplot(width=0.5) + 
+    geom_dotplot(binaxis='y', stackdir='center', dotsize=1) +
+ theme_classic() +  theme(axis.text.y = element_text(size = 12),
+                          axis.text.x = element_text(size = 12)) +
+     ylab(y_axis) +
+     theme(axis.title.x = element_blank()) +
+    theme(legend.position = "none") +
+     stat_compare_means(paired = FALSE, 
+                        method = "wilcox.test",
+                        label.x.npc = "center") +
+     ggtitle(title)
+ }
+
+```
+
+
+Split the CSS dataset into VF and AC metagenomes
+```{r}
+
+VF_all_count_CSS <- split_dataset_fn(mode="VF")
+AC_all_count_CSS <- split_dataset_fn(mode="AC")
+
+```
+
+Find important features using recursive feature elimination (CSS normalized abundances). Then perform logistic regression
+
+Procedure for metagenomes of VF
+
+```{r}
+##Performs 10 fold cross validation with 3 repeats. 
+train_control <- trainControl(method="repeatedcv", number=10,
+                              repeats = 3,
+                              summaryFunction=twoClassSummary, 
+                              classProbs=TRUE, savePredictions = TRUE,
+                              allowParallel = TRUE)
+
+set.seed(123)
+subsets <- c(1:15)
+
+rfe_ctrl <- rfeControl(functions = lrFuncs,
+                   method = "repeatedcv",
+                   number = 10,
+                   repeats = 3,
+                   verbose = FALSE)
+
+VF_all_rfe <- rfe(x=VF_all_count_CSS[,-44], y=VF_all_count_CSS$AD_hse,
+                 sizes = subsets,
+                 rfeControl = rfe_ctrl, metric = "Accuracy")
+
+print(VF_all_rfe)
+
+VF_rfe_predictors <- predictors(VF_all_rfe) #save as a vector. 
+
+##Just call glm on just these 12.
+
+VF_rfe_predictors <- append(VF_rfe_predictors, "AD_hse", after = length(VF_rfe_predictors))
+
+VF_all_CSS_post_rfe <- VF_all_count_CSS[,VF_rfe_predictors]
+
+set.seed(123)
+
+VF_all_CSS_post_rfe_model <- train(AD_hse~., data=VF_all_CSS_post_rfe,
+                             trControl=train_control, 
+                             method="glm", family=binomial())
+print(VF_all_CSS_post_rfe_model) 
+confusionMatrix(VF_all_CSS_post_rfe_model) #0.7758 average accuracy 
+
+#Look at summary(VF_all_CSS_post_rfe_model) for a list of significant taxa, see below
+
+summary(VF_all_CSS_post_rfe_model)
+
+```
+
+Procedure for metagenomes of AC
+
+```{r}
+set.seed(123)
+
+AC_all_rfe <- rfe(x=AC_all_count_CSS[,-44], y=AC_all_count_CSS$AD_hse,
+                 sizes = subsets,
+                 rfeControl = rfe_ctrl, metric = "Accuracy")
+
+print(AC_all_rfe)
+
+AC_rfe_predictors <- predictors(AC_all_rfe) #save as a vector. 
+
+##Just call glm on just these 14.
+
+AC_rfe_predictors <- append(AC_rfe_predictors, "AD_hse", after = length(AC_rfe_predictors))
+
+AC_all_CSS_post_rfe <- AC_all_count_CSS[,AC_rfe_predictors]
+
+set.seed(123)
+
+AC_all_CSS_post_rfe_model <- train(AD_hse~., data=AC_all_CSS_post_rfe,
+                             trControl=train_control, 
+                             method="glm", family=binomial())
+
+print(AC_all_CSS_post_rfe_model) 
+confusionMatrix(AC_all_CSS_post_rfe_model) #0.6433
+
+#Look at summary(AC_all_CSS_post_rfe_model) for a list of significant taxa to plot, see below
+
+summary(AC_all_CSS_post_rfe_model)
+
+```
+
+As an alternative, perform stepwise logistic regression using compositional features as described by J. Rivera-Pinto et al 2018 (https://msystems.asm.org/content/3/4/e00053-18)
+
+To reduce the number of variables to test, fix the numerator as Staph aureus read counts. The denominator can be any subsetted taxa. Start off by only permitting 1 taxa to be in the denominator, then obtain the model and get the accuracy 
+
+Then permit only 2 taxa to be in the denominator and obtain the model. If the accuracy is < or similar to the former step, keep the former model. And so on...
+
+Prepare the inputs to the model by calculating the log ratios of S.aureus/taxa (compositional features)
+
+
+```{r}
+
+#######################################
+##Inputs for stepwise regression models
+#######################################
+
+#only retain taxa in "bracken_filtered_taxa_df". The criteria for retention is the same as that used for post CSS normalization. Median relative abundance > 0.01%
+
+bracken_count_df <- transpose_fn(bracken_count_df) 
+
+#replace "-" with "." in the colnames , to avoid downstream conflicts
+colnames(bracken_count_df) <- gsub(pattern="-", replacement=".", colnames(bracken_count_df))
+
+bracken_count_filtered_df <- bracken_count_df %>% dplyr::select(all_of(colnames(bracken_filtered_taxa_df[,-1])))
+
+#Split bracken_count_filtered_df into all VF samples and all AC samples
+
+VF_all_count <- split_dataset_fn(df=bracken_count_filtered_df , mode="VF")
+AC_all_count <- split_dataset_fn(df=bracken_count_filtered_df , mode="AC")
+
+#Get log balances
+
+VF_bal_input <- get_multi_log_balances(VF_all_count)
+AC_bal_input <- get_multi_log_balances(AC_all_count)
+
+VF_bal_input <- lapply(VF_bal_input, add_AD_status)
+AC_bal_input <- lapply(AC_bal_input, add_AD_status)
+
+```
+
+Create models with these log balances as features.
+
+Model with the metagenomes of Vfs.
+
+Keep the 1 denominator model since there is no significant improvement in the 2 denominator model.
+
+```{r}
+
+##################
+####VF  samples
+##################
+
+#If accuracy is the metric, then Cohen’s (unweighted) Kappa statistic is reported
+
+########################
+## 1 taxa in denominator
+########################
+
+# train the model with the dataset of max 1 denominator
+set.seed(123) 
+VF_bal_1denom <- train(AD_hse~., data=VF_bal_input[[1]], trControl=train_control, 
+                             method="glmStepAIC", family=binomial(), direction="forward")
+
+
+print(VF_bal_1denom) #ROC 0.7756481  Sens 0.75  Spec 0.6744444
+
+#varImp is also called "ROC curve variable importance". For classification, ROC curve analysis is conducted on each predictor. For two class problems, a series of cutoffs is applied to the predictor data to predict the class. The sensitivity and specificity are computed for each cutoff and the ROC curve is computed. The trapezoidal rule is used to compute the area under the ROC curve. This area is used as the measure of variable importance.
+
+varImp(VF_bal_1denom) #Staphylococcus_hominis (100) is the most important feature 
+
+confusionMatrix(VF_bal_1denom) #0.7139
+
+#Now model using the most important feature: Staphylococcus_hominis. Remember to set the seed again for consistent partitioning and repeats. 
+set.seed(123)
+VF_bal_Shom <- train(AD_hse~Staphylococcus_hominis, data=VF_bal_input[[1]], trControl=train_control,method="glm", family=binomial())
+
+print(VF_bal_Shom) #ROC 0.8153704  Sens 0.8   Spec 0.6833333
+##confusionMatrix
+
+confusionMatrix(VF_bal_Shom) #The accuracy is 0.7434
+
+########################
+## 2 taxa in denominator
+########################
+
+##Select all 2 taxa combinations that have S hominis in the "denominator
+
+#to access the denominator attributes, type attr(df[,i], "denominator")
+
+VF_bal_2taxa_input <- retain_features(input=VF_bal_input[[2]], taxa="Staphylococcus_hominis")
+set.seed(123)
+VF_bal_2denom <- train(AD_hse~., data=VF_bal_2taxa_input, trControl=train_control, 
+                             method="glmStepAIC", family=binomial(), direction="forward")
+
+print(VF_bal_2denom)
+varImp(VF_bal_2denom) #The two most important variables are X69 (100) and X414 (98)
+
+attr(VF_bal_input[[2]][,"X69"], "denominator")  #Refers to "Actinomyces_oris" and "Staphylococcus_hominis"
+attr(VF_bal_input[[2]][,"X414"], "denominator")  #Refers to "Microbacterium_aurum" and "Staphylococcus_hominis"
+
+##model with only these two taxa
+#"Actinomyces_oris" and "Staphylococcus_hominis"
+set.seed(123)
+VF_bal_Aoris_Shom <- train(AD_hse~X69 , data=VF_bal_input[[2]], trControl=train_control, method="glm", family=binomial())
+
+print(VF_bal_Aoris_Shom) #ROC 0.8183333  Sens 0.8333333  Spec 0.7188889
+
+confusionMatrix(VF_bal_Aoris_Shom) #The accuracy is 0.7788
+
+
+```
+
+Model with the metagenomes of Acs.
+
+Keep the 1 denominator model since there is no significant improvement in the 2 denominator model.
+
+```{r}
+
+###############
+####AC samples
+###############
+
+########################
+## 1 taxa in denominator
+########################
+
+# train the model with the dataset of max 1 denominator
+set.seed(123)
+AC_bal_1denom <- train(AD_hse~., data=AC_bal_input[[1]], trControl=train_control, 
+                             method="glmStepAIC", family=binomial(), direction="forward")
+
+print(AC_bal_1denom) #ROC 0.8357407  Sens 0.7722222  Spec 0.7422222
+varImp(AC_bal_1denom) #Staphylococcus_hominis is the most important feature. 
+
+#Now model using the most important feature: Staphylococcus_hominis
+set.seed(123)
+AC_bal_Shom <- train(AD_hse~Staphylococcus_hominis, data=AC_bal_input[[1]], trControl=train_control, method="glm", family=binomial())
+
+print(AC_bal_Shom) #ROC of 0.812963  Sens 0.8277778  Spec 0.7033333
+
+confusionMatrix(AC_bal_Shom) #The accuracy is 0.769
+
+########################
+## 2 taxa in denominator
+########################
+
+##Select all 2 taxa combinations that have S hominis in the "denominator
+
+AC_bal_2taxa_input <- retain_features(input=AC_bal_input[[2]], taxa="Staphylococcus_hominis")
+set.seed(123)
+AC_bal_2denom <- train(AD_hse~., data=AC_bal_2taxa_input, trControl=train_control, 
+                             method="glmStepAIC", family=binomial(), direction="forward")
+
+print(AC_bal_2denom)  #ROC 0.8172222  Sens 0.7444444  Spec 0.7577778
+varImp(AC_bal_2denom) #The two most important variables are X792 (100) and X69 (93.25)
+
+attr(AC_bal_input[[2]][,"X792"], "denominator")  #Refers to "Streptococcus_sanguinis" and "Staphylococcus_hominis"
+attr(AC_bal_input[[2]][,"X69"], "denominator")  #Refers to "Actinomyces_oris" and "Staphylococcus_hominis"
+
+##model with only these two taxa
+set.seed(123)
+AC_bal_Ssang_Shom <- train(AD_hse~X792 , data=AC_bal_input[[2]], trControl=train_control, method="glm", family=binomial())
+
+print(AC_bal_Ssang_Shom) #ROC 0.85  Sens 0.8166667  Spec 0.7077778
+
+confusionMatrix(AC_bal_Ssang_Shom) #The accuracy is 0.7661 
+
+
+```
+
+Perform corrected resampled t test to compare model performances. Normality assumptions are valid, by the Shapiro-Wilk test.
+
+From the results of the resampled t test, no significant differences in performance metrics between the model using CSS normalized abundances, and the model using log balances.  
+
+```{r}
+#check normality assumptions for performance metrics. If value of the Shapiro-Wilk Test is greater than 0.05, the data is normal.
+#for ROC
+shapiro.test(VF_bal_Shom$resample$ROC)
+shapiro.test(AC_bal_Shom$resample$ROC)
+shapiro.test(AC_all_CSS_post_rfe_model$resample$ROC)
+shapiro.test(VF_all_CSS_post_rfe_model$resample$ROC)
+
+#for accuracy
+acc_shapiro.test(VF_bal_Shom)
+acc_shapiro.test(AC_bal_Shom)
+acc_shapiro.test(AC_all_CSS_post_rfe_model)
+acc_shapiro.test(VF_all_CSS_post_rfe_model)
+
+# do the t test
+
+VF_CSS_vs_bal<- modified_t_test_fn(input1=VF_bal_Shom,
+                                          input2=VF_all_CSS_post_rfe_model)
+
+VF_CSS_vs_bal$p_val
+
+AC_CSS_vs_bal<- modified_t_test_fn(input1=AC_bal_Shom,
+                                          input2=AC_all_CSS_post_rfe_model)
+
+AC_CSS_vs_bal$p_val
+
+```
+
+
+Box plots of the log ratio of S.aureus/S.hominis (A/H ratio) for different metagenome categories.
+
+Figure 2B
+```{r echo=FALSE}
+
+VF_cg_libs <- metadata %>% filter(sample_category=="caregiver", body_region=="VF") %>% pull(LibraryID)
+
+AC_cg_libs <- metadata %>% filter(sample_category=="caregiver", body_region=="AC") %>% pull(LibraryID)
+
+VF_child_libs <- metadata %>% filter(sample_category=="child", body_region=="VF") %>% pull(LibraryID)
+
+AC_child_libs <- metadata %>% filter(sample_category=="child", body_region=="AC") %>% pull(LibraryID)
+
+
+p1 <- ratio_boxplot_fn(df=VF_bal_input[[1]][row.names(VF_bal_input[[1]]) %in% VF_cg_libs,], title = "Caregiver's volar forearm")
+
+p2 <- ratio_boxplot_fn(df=AC_bal_input[[1]][row.names(AC_bal_input[[1]]) %in% AC_cg_libs,], title = "Caregiver's antecubital fossae")
+
+p3 <- ratio_boxplot_fn(df=VF_bal_input[[1]][row.names(VF_bal_input[[1]]) %in% VF_child_libs,], title = "Children's volar forearm")
+
+p4 <- ratio_boxplot_fn(df=AC_bal_input[[1]][row.names(AC_bal_input[[1]]) %in% AC_child_libs,], title = "Children's antecubital fossae")
+
+combined_plots <- ggarrange(p1, p2, p3, p4,
+          ncol = 2, nrow = 2)
+
+combined_plots
+
+ggsave(filename="../plots/fig2b_boxplots.svg", plot=combined_plots, width =10, height =7)
+
+```
+
+
+

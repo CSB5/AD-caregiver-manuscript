@@ -1,0 +1,2 @@
+Sample	Enterotoxin_A_sea	Enterotoxin_B_seb	Enterotoxin_G_seg	Enterotoxin_M_sem	Enterotoxin_N_sen	Ferrichrome_operon_fhuD	Phenol-soluble_modulins_psmB	Staphopain_A_scpA	Staphylococcal_inhibitor_of_complement_scn	Staphylokinase_sak	a-hemolysin_hla
+WHB11317_fastpdecont	Enterotoxin_A_sea*?	Enterotoxin_B_seb*?	Enterotoxin_G_seg*?	Enterotoxin_M_sem*?	Enterotoxin_N_sen*?	Ferrichrome_operon_fhuD*	Phenol-soluble_modulins_psmB*	Staphopain_A_scpA*?	Staphylococcal_inhibitor_of_complement_scn*	Staphylokinase_sak*	a-hemolysin_hla*

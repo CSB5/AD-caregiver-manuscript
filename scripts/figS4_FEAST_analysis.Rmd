@@ -1,0 +1,210 @@
+---
+title: "figS4_FEAST_analysis"
+author: "Minghao Chia"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+```{r}
+library(tidyverse)
+library(here)
+library(ggpubr)
+```
+
+
+Analysis of sourcetracking data after running FEAST.
+
+Load metadata, FEAST outputs and format the data.
+
+```{r load_FEAST_output, message=FALSE}
+
+#Load in meta_info
+#This filter removes MBT477 (A15 VF) because it only has about 8K paired reads. 
+meta_info <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE) %>%
+  filter(after_decont >= 10000)
+
+#Make labels consistent by removing R1 and R2 and changing LE1 to LE for example.
+
+meta_info$subj_region_label <- gsub(pattern="R[12]", replacement="", meta_info$subj_region_label)
+meta_info$subj_region_label <- gsub(pattern="LE1", replacement="LE", meta_info$subj_region_label)
+
+
+#Load the FEAST output in a list (one output file for each sink)
+
+filenames <- list.files(path="../data/processed/FEAST_out/",pattern="*_results")
+
+FEAST_results <- lapply(filenames, function(x){
+  read_tsv(paste0("../data/processed/FEAST_out/",x))
+})
+
+
+
+names(FEAST_results) <- filenames %>% gsub(pattern="_results", replacement ="", .) #these are also the sink names
+sinknames <- filenames %>% gsub(pattern="_results", replacement ="", .)
+
+#wrapper function to get house number
+
+get_house <- function(x){
+  gsub(pattern="[A-Z_]", replacement ="", x)
+}
+
+#add a column categorizing each source in relation to the sink.. such as own_body, matched_adult, unmatched_adult etc. 
+#lapply this function to FEAST_results list, using the sinknames as an input
+add_category_fn <- function(sink){
+  
+  FEAST_data <- FEAST_results[[sink]]
+  
+  house_number <- get_house(sink) #house number of the sink
+  
+  #If statements to determine relationships 
+  
+  if(str_detect(sink, pattern="^A")){ #AD child
+    FEAST_data$sample_cat <- ifelse(grepl("^A", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                    "same_individual", 
+                                    ifelse(grepl("^B", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                           "matched_caregiver",
+                                           ifelse(grepl("^A", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                  "other_AD_children",
+                                                  ifelse(grepl("^B", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                         "unmatched_caregiver",
+                                                         ifelse(grepl("^C", FEAST_data$source),"other_healthy_children",
+                                                                ifelse(grepl("^D", FEAST_data$source),"unmatched_caregiver",
+                                                                       ifelse(FEAST_data$source=="unknown","unknown", NA
+                                                                )))))))
+  } else if (str_detect(sink, pattern="^B")){ #AD caregiver
+       FEAST_data$sample_cat <- ifelse(grepl("^B", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                    "same_individual", 
+                                    ifelse(grepl("^A", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                           "matched_child",
+                                           ifelse(grepl("^A", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                  "other_AD_children",
+                                                  ifelse(grepl("^B", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                         "unmatched_caregiver",
+                                                         ifelse(grepl("^C", FEAST_data$source),"other_healthy_children",
+                                                                ifelse(grepl("^D", FEAST_data$source),"unmatched_caregiver",
+                                                                       ifelse(FEAST_data$source=="unknown","unknown", NA
+                                                                )))))))
+    
+  } else if (str_detect(sink, pattern="^C")){ #healthy child
+     FEAST_data$sample_cat <- ifelse(grepl("^C", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                    "same_individual", 
+                                    ifelse(grepl("^D", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                           "matched_caregiver",
+                                           ifelse(grepl("^C", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                  "other_healthy_children",
+                                                  ifelse(grepl("^D", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                         "unmatched_caregiver",
+                                                         ifelse(grepl("^A", FEAST_data$source),"other_AD_children",
+                                                                ifelse(grepl("^B", FEAST_data$source),"unmatched_caregiver",
+                                                                       ifelse(FEAST_data$source=="unknown","unknown", NA
+                                                                )))))))
+  } else if (str_detect(sink, pattern="^D")){ #healthy caregiver
+    FEAST_data$sample_cat <- ifelse(grepl("^D", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                    "same_individual", 
+                                    ifelse(grepl("^C", FEAST_data$source) & get_house(FEAST_data$source)==house_number,
+                                           "matched_child",
+                                           ifelse(grepl("^C", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                  "other_healthy_children",
+                                                  ifelse(grepl("^D", FEAST_data$source) & get_house(FEAST_data$source)!=house_number,
+                                                         "unmatched_caregiver",
+                                                         ifelse(grepl("^A", FEAST_data$source),"other_AD_children",
+                                                                ifelse(grepl("^B", FEAST_data$source),"unmatched_caregiver",
+                                                                       ifelse(FEAST_data$source=="unknown","unknown", NA
+                                                                )))))))
+    
+  }
+  
+  return(FEAST_data)
+  }
+  
+
+
+
+FEAST_data_labelled <- lapply(sinknames, add_category_fn)
+  
+names(FEAST_data_labelled) <- sinknames
+
+#partition the list according to different sink categories (AD_child, AD_caregiver, healthy_child, healthy_caregiver)
+
+AD_child_FEAST <- FEAST_data_labelled[grepl("^A", names(FEAST_data_labelled))]
+
+healthy_child_FEAST <- FEAST_data_labelled[grepl("^C", names(FEAST_data_labelled))]
+
+
+```
+
+Make boxplot of the source proportions, for each sink category and source category (sample_cat). Omit plotting contributions from body sites of the same individual for visual clarity. 
+
+For dataset with AD child skin as sinks
+
+Figure S4 (left panel)
+
+```{r AD_child_boxplot, echo = FALSE}
+
+AD_child_FEAST_df <- do.call("rbind", AD_child_FEAST )
+
+AD_child_FEAST_df$sample_cat <- factor(AD_child_FEAST_df$sample_cat ,
+                                           levels=c("same_individual", 
+                                                    "matched_caregiver", 
+                                                    "unmatched_caregiver",
+                                                    "other_AD_children",
+                                                    "other_healthy_children",
+                                                    "unknown"))
+
+
+##Remove same_individual category for clearer visualization of the differences
+
+AD_child_proportions_plot <- ggplot(filter(AD_child_FEAST_df, sample_cat != "same_individual"), 
+                                    aes(x=sample_cat, y=Proportions_est)) + geom_violin(scale="width") + geom_boxplot(width=0.2) +
+  theme_classic() + stat_compare_means(paired = FALSE, method = "wilcox.test", ref.group = "matched_caregiver", label = "p.format", label.y=0.3) +
+  ylab("Est. contribution to skin metagenomes of child") +
+  ggtitle("Sink: Child(AD houses) skin") +
+  theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 45, hjust=1)) +
+  coord_cartesian(ylim=c(0,0.30))
+
+AD_child_proportions_plot 
+
+ggsave(filename="../plots/figS4_AD_child_FEAST.svg", 
+       plot=AD_child_proportions_plot,width=10, height=7)
+
+```
+
+For dataset with healthy child skin as sinks
+
+Figure S4 (right panel)
+
+```{r healthy_child_boxplots, echo = FALSE}
+
+healthy_child_FEAST_df <- do.call("rbind", healthy_child_FEAST )
+
+healthy_child_FEAST_df$sample_cat <- factor(healthy_child_FEAST_df$sample_cat ,
+                                           levels=c("same_individual", 
+                                                    "matched_caregiver", 
+                                                    "unmatched_caregiver",
+                                                    "other_AD_children",
+                                                    "other_healthy_children",
+                                                    "unknown"))
+
+##Remove same_individual category for clearer visualization of the differences
+
+healthy_child_proportions_plot <- ggplot(filter(healthy_child_FEAST_df, 
+                                                   sample_cat != "same_individual"), 
+                                    aes(x=sample_cat, y=Proportions_est)) +  
+  geom_violin(scale="width") + theme_classic() + geom_boxplot(width=0.2)+
+  stat_compare_means(paired = FALSE, method = "wilcox.test", ref.group = "matched_caregiver", label = "p.format", label.y=0.3) +
+  ylab("Est. contribution to skin metagenomes of child") +
+  ggtitle("Sink: Child(ctrl houses) skin") +
+  theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 45, hjust=1)) +
+  coord_cartesian(ylim=c(0,0.30))
+
+healthy_child_proportions_plot
+
+ggsave(filename="../plots/figS4_ctrl_child_FEAST.svg", 
+       plot=healthy_child_proportions_plot,width=10, height=7)
+
+```
