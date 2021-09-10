@@ -359,7 +359,7 @@ rfe_ctrl <- rfeControl(functions = lrFuncs,
                    repeats = 3,
                    verbose = FALSE)
 
-VF_all_rfe <- rfe(x=VF_all_count_CSS[,-44], y=VF_all_count_CSS$AD_hse,
+VF_all_rfe <- rfe(x=VF_all_count_CSS[,-42], y=VF_all_count_CSS$AD_hse,
                  sizes = subsets,
                  rfeControl = rfe_ctrl, metric = "Accuracy")
 
@@ -367,7 +367,7 @@ print(VF_all_rfe)
 
 VF_rfe_predictors <- predictors(VF_all_rfe) #save as a vector. 
 
-##Just call glm on just these 12.
+##Just call glm on just these selected predictors.
 
 VF_rfe_predictors <- append(VF_rfe_predictors, "AD_hse", after = length(VF_rfe_predictors))
 
@@ -379,11 +379,28 @@ VF_all_CSS_post_rfe_model <- train(AD_hse~., data=VF_all_CSS_post_rfe,
                              trControl=train_control, 
                              method="glm", family=binomial())
 print(VF_all_CSS_post_rfe_model) 
-confusionMatrix(VF_all_CSS_post_rfe_model) #0.7758 average accuracy 
+confusionMatrix(VF_all_CSS_post_rfe_model) #0.7876 average accuracy 
 
-#Look at summary(VF_all_CSS_post_rfe_model) for a list of significant taxa, see below
+#Look at summary(VF_all_CSS_post_rfe_model) for a list of significant taxa
 
 summary(VF_all_CSS_post_rfe_model)
+
+#input_model is an object of class "train"
+tidy_lm_res <- function(input_model){
+  res_df <- data.frame(summary(VF_all_CSS_post_rfe_model)$coefficients)
+  res_df$feature <- row.names(res_df)
+  colnames(res_df) <- c("Estimate", "Std_err", "z_value", "p_value", "feature")
+  
+  res_df <- res_df %>% dplyr::select(feature, Estimate, Std_err, z_value, p_value)
+  res_df$padj <- p.adjust(res_df$p_value, method="fdr")
+  return(res_df)
+}
+
+##This is part of supplementary table 3 in the main manuscript 
+VF_all_CSS_post_rfe_model_res <- tidy_lm_res(VF_all_CSS_post_rfe_model)
+
+write_tsv(VF_all_CSS_post_rfe_model_res, file="../data/processed/VF_CSS_rfe_lm_results.tsv")
+
 
 ```
 
@@ -392,7 +409,7 @@ Procedure for metagenomes of AC
 ```{r}
 set.seed(123)
 
-AC_all_rfe <- rfe(x=AC_all_count_CSS[,-44], y=AC_all_count_CSS$AD_hse,
+AC_all_rfe <- rfe(x=AC_all_count_CSS[,-42], y=AC_all_count_CSS$AD_hse,
                  sizes = subsets,
                  rfeControl = rfe_ctrl, metric = "Accuracy")
 
@@ -400,7 +417,7 @@ print(AC_all_rfe)
 
 AC_rfe_predictors <- predictors(AC_all_rfe) #save as a vector. 
 
-##Just call glm on just these 14.
+##Just call glm on just these 15 predictors.
 
 AC_rfe_predictors <- append(AC_rfe_predictors, "AD_hse", after = length(AC_rfe_predictors))
 
@@ -412,12 +429,18 @@ AC_all_CSS_post_rfe_model <- train(AD_hse~., data=AC_all_CSS_post_rfe,
                              trControl=train_control, 
                              method="glm", family=binomial())
 
-print(AC_all_CSS_post_rfe_model) 
-confusionMatrix(AC_all_CSS_post_rfe_model) #0.6433
+print(AC_all_CSS_post_rfe_model) # ROC 0.87   Sens 0.8111111      Spec  0.7622222   
+     
+confusionMatrix(AC_all_CSS_post_rfe_model) #0.7895 average accuracy
 
 #Look at summary(AC_all_CSS_post_rfe_model) for a list of significant taxa to plot, see below
 
 summary(AC_all_CSS_post_rfe_model)
+
+#This is part of supplementary table 3 in the main manuscript 
+AC_all_CSS_post_rfe_model_res <- tidy_lm_res(AC_all_CSS_post_rfe_model)
+
+write_tsv(AC_all_CSS_post_rfe_model_res, file="../data/processed/AC_CSS_rfe_lm_results.tsv")
 
 ```
 
@@ -484,7 +507,7 @@ VF_bal_1denom <- train(AD_hse~., data=VF_bal_input[[1]], trControl=train_control
                              method="glmStepAIC", family=binomial(), direction="forward")
 
 
-print(VF_bal_1denom) #ROC 0.7756481  Sens 0.75  Spec 0.6744444
+print(VF_bal_1denom) #ROC 0.7671296  Sens 0.7444444  Spec 0.6811111
 
 #varImp is also called "ROC curve variable importance". For classification, ROC curve analysis is conducted on each predictor. For two class problems, a series of cutoffs is applied to the predictor data to predict the class. The sensitivity and specificity are computed for each cutoff and the ROC curve is computed. The trapezoidal rule is used to compute the area under the ROC curve. This area is used as the measure of variable importance.
 
@@ -515,15 +538,15 @@ VF_bal_2denom <- train(AD_hse~., data=VF_bal_2taxa_input, trControl=train_contro
                              method="glmStepAIC", family=binomial(), direction="forward")
 
 print(VF_bal_2denom)
-varImp(VF_bal_2denom) #The two most important variables are X69 (100) and X414 (98)
+varImp(VF_bal_2denom) #The two most important variables are X65 (100) and X333 (98)
 
-attr(VF_bal_input[[2]][,"X69"], "denominator")  #Refers to "Actinomyces_oris" and "Staphylococcus_hominis"
-attr(VF_bal_input[[2]][,"X414"], "denominator")  #Refers to "Microbacterium_aurum" and "Staphylococcus_hominis"
+attr(VF_bal_input[[2]][,"X65"], "denominator")  #Refers to "Actinomyces_oris" and "Staphylococcus_hominis"
+attr(VF_bal_input[[2]][,"X333"], "denominator")  #Refers to "Microbacterium_aurum" and "Staphylococcus_hominis"
 
 ##model with only these two taxa
 #"Actinomyces_oris" and "Staphylococcus_hominis"
 set.seed(123)
-VF_bal_Aoris_Shom <- train(AD_hse~X69 , data=VF_bal_input[[2]], trControl=train_control, method="glm", family=binomial())
+VF_bal_Aoris_Shom <- train(AD_hse~X65 , data=VF_bal_input[[2]], trControl=train_control, method="glm", family=binomial())
 
 print(VF_bal_Aoris_Shom) #ROC 0.8183333  Sens 0.8333333  Spec 0.7188889
 
@@ -551,7 +574,7 @@ set.seed(123)
 AC_bal_1denom <- train(AD_hse~., data=AC_bal_input[[1]], trControl=train_control, 
                              method="glmStepAIC", family=binomial(), direction="forward")
 
-print(AC_bal_1denom) #ROC 0.8357407  Sens 0.7722222  Spec 0.7422222
+print(AC_bal_1denom) #ROC 0.8309259  Sens 0.7722222  Spec 0.7366667
 varImp(AC_bal_1denom) #Staphylococcus_hominis is the most important feature. 
 
 #Now model using the most important feature: Staphylococcus_hominis
@@ -573,15 +596,15 @@ set.seed(123)
 AC_bal_2denom <- train(AD_hse~., data=AC_bal_2taxa_input, trControl=train_control, 
                              method="glmStepAIC", family=binomial(), direction="forward")
 
-print(AC_bal_2denom)  #ROC 0.8172222  Sens 0.7444444  Spec 0.7577778
-varImp(AC_bal_2denom) #The two most important variables are X792 (100) and X69 (93.25)
+print(AC_bal_2denom)  #ROC 0.8209259  Sens 0.7555556  Spec 0.77
+varImp(AC_bal_2denom) #The two most important variables are X711 (100) and X65 (93.25)
 
-attr(AC_bal_input[[2]][,"X792"], "denominator")  #Refers to "Streptococcus_sanguinis" and "Staphylococcus_hominis"
-attr(AC_bal_input[[2]][,"X69"], "denominator")  #Refers to "Actinomyces_oris" and "Staphylococcus_hominis"
+attr(AC_bal_input[[2]][,"X711"], "denominator")  #Refers to "Streptococcus_sanguinis" and "Staphylococcus_hominis"
+attr(AC_bal_input[[2]][,"X65"], "denominator")  #Refers to "Actinomyces_oris" and "Staphylococcus_hominis"
 
 ##model with only these two taxa
 set.seed(123)
-AC_bal_Ssang_Shom <- train(AD_hse~X792 , data=AC_bal_input[[2]], trControl=train_control, method="glm", family=binomial())
+AC_bal_Ssang_Shom <- train(AD_hse~X711 , data=AC_bal_input[[2]], trControl=train_control, method="glm", family=binomial())
 
 print(AC_bal_Ssang_Shom) #ROC 0.85  Sens 0.8166667  Spec 0.7077778
 

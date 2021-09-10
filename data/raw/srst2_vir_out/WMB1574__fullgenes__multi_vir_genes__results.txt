@@ -1,0 +1,16 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WMB1574_fastpdecont	multi_vir_genes	Enterotoxin_N_sen	Enterotoxin_N_sen	100.0	87.215	20snp		2.646	756	0.083	Enterotoxin_N_sen	Enterotoxin_N_sen	
+WMB1574_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	99.634	124.693	8snp2indel		2.93	273	0.345	Bacteriocin_bsa	Bacteriocin_bsa	
+WMB1574_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	66.795	7snp		2.029	345	0.049	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WMB1574_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	109.805	3snp		0.61	492	0.071	Staphylokinase_sak	Staphylokinase_sak	
+WMB1574_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	92.387	142.92	136snp4indel183holes		6.053	2430	0.5	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WMB1574_fastpdecont	multi_vir_genes	Enterotoxin_I_sei	Enterotoxin_I_sei	100.0	65.245	24snp	edge2.0	3.292	729	0.119	Enterotoxin_I_sei	Enterotoxin_I_sei	
+WMB1574_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	131.045	19snp		1.628	1167	0.069	Staphopain_A_scpA	Staphopain_A_scpA	
+WMB1574_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	100.0	246.755			0.0	2851	0.048	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WMB1574_fastpdecont	multi_vir_genes	Enterotoxin_M_sem	Enterotoxin_M_sem	99.722	49.068	53snp2indel		7.361	720	0.143	Enterotoxin_M_sem	Enterotoxin_M_sem	
+WMB1574_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	99.469	32.869	35snp4holes		4.673	753	0.333	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WMB1574_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	113.939	56snp		5.833	960	0.105	a-hemolysin_hla	a-hemolysin_hla	
+WMB1574_fastpdecont	multi_vir_genes	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	100.0	104.145			0.0	786	0.077	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	
+WMB1574_fastpdecont	multi_vir_genes	TSST-1_tst	TSST-1_tst	100.0	151.678	1snp		0.142	705	0.038	TSST-1_tst	TSST-1_tst	
+WMB1574_fastpdecont	multi_vir_genes	Enterotoxin_G_seg	Enterotoxin_G_seg	100.0	42.109	15snp		1.931	777	0.083	Enterotoxin_G_seg	Enterotoxin_G_seg	
+WMB1574_fastpdecont	multi_vir_genes	Enterotoxin_O_seo	Enterotoxin_O_seo	94.764	16.28	46snp41holes	edge1.0	6.199	783	0.25	Enterotoxin_O_seo	Enterotoxin_O_seo	

@@ -38,15 +38,20 @@ mummer_dist <- read_tsv("../data/raw/mummer_out/mummer_dist_sub.dat",
 
 mummer_dist$pattern <- paste(mummer_dist$X1, mummer_dist$X2)
 
+#X10 is the %ANIM, gSNP adjusted.  
+mean(mummer_dist$X10) #99.49552
+sd(mummer_dist$X10) #0.249
+
 ```
 
-Filter the genomes for substantial completeness >= 70% and low contamination < 5%. Then exclude genomes with < 95% ANI compared to S. aureus reference genome (strain NCTC 8325) 
-
-WHB11346 was further excluded because it shared <80% of genome with WHB11334 (from mummer analysis), and WHB11334 had a higher ANI to the reference genome. 
+Assemblies used for further analysis must fulfill the following criteria:
+i) >= 95% ANI compared to 95% ANI compared to S. aureus reference genome (strain NCTC 8325) 
+ii) >= 95% completeness and <= 5% contamination
+ 
 
 ```{r}
 
-isolates_passQC <- checkm_eval_dat %>% filter(completeness >= 70 & contamination <= 5) %>% filter(bin_id %in% (fastANI %>% filter(X2 >= 95) %>% pull(X1))) %>% filter(bin_id != "WHB11346") #52 genomes left
+isolates_passQC <- checkm_eval_dat %>% filter(completeness >= 95 & contamination <= 5) %>% filter(bin_id %in% (all_isolate_metadata %>% filter(percent_ANI_vs_ref >= 95) %>% pull(LibraryID)))  #55 genomes left
 
 #final metadata for 52 isolates used in the analysis
 final_isolate_metadata <- all_isolate_metadata %>% filter(LibraryID %in% isolates_passQC$bin_id)
@@ -54,35 +59,37 @@ final_isolate_metadata <- all_isolate_metadata %>% filter(LibraryID %in% isolate
 ```
 
 
-Do a Wilcoxon rank sum test on the %ANI for isolates from the nares, axila and groin of individuals from the same house (matching houses: 6 for AD group, 4 for control group)
+Do a Wilcoxon rank sum test on the %ANI for isolates from the lesions and/or nares, axila and groin of children vs isolates from the nares, axila and groin of caregivers from the same house (matching houses: 6 for AD group, 5 for control group)
 
 Note that the p-value is < 0.05, showing statistical significance. 
 
 
 ```{r wilcox_test}
-AD_child_candidates <- c("A07_nasal_ax_groin", 
-                         "A08_nasal_ax_groin",
-                         "A11_nasal_ax_groin",
-                         "A15_nasal_ax_groin",
-                         "A17_nasal_ax_groin",
-                         "A18_nasal_ax_groin")
+AD_child_candidates <- c("A07", 
+                         "A08",
+                         "A11",
+                         "A15",
+                         "A17",
+                         "A18")
 
-AD_cg_candidates <- c("B07_nasal_ax_groin", 
-                         "B08_nasal_ax_groin",
-                         "B11_nasal_ax_groin",
-                         "B15_nasal_ax_groin",
-                         "B17_nasal_ax_groin",
-                         "B18_nasal_ax_groin")
+AD_cg_candidates <- c("B07", 
+                         "B08",
+                         "B11",
+                         "B15",
+                         "B17",
+                         "B18")
 
-ctrl_child_candidates <- c("C02_nasal_ax_groin", 
-                         "C09_nasal_ax_groin",
-                         "C17_nasal_ax_groin",
-                         "C30_nasal_ax_groin")
+ctrl_child_candidates <- c("C02", 
+                         "C09",
+                         "C12",
+                         "C17",
+                         "C30")
 
-ctrl_cg_candidates <- c("D02_nasal_ax_groin", 
-                         "D09_nasal_ax_groin",
-                         "D17_nasal_ax_groin",
-                         "D30_nasal_ax_groin")
+ctrl_cg_candidates <- c("D02", 
+                         "D09",
+                        "D12",
+                         "D17",
+                         "D30")
 
 AD_matching_vector <- vector()
 
@@ -90,9 +97,11 @@ for (i in 1:length(AD_child_candidates)){
   match1 <- AD_child_candidates[i]
   match2 <- AD_cg_candidates[i]
   
-  row_number_for_subset <- which(mummer_dist$pattern %in% c(paste(match1, match2), paste(match2, match1)))
+  row_number_for_subset <- which(str_detect(string=mummer_dist$pattern, 
+                                            pattern=match1) & str_detect(string=mummer_dist$pattern, 
+                                            pattern=match2))
   
-  AD_matching_vector[i] <- row_number_for_subset
+  AD_matching_vector <-c(AD_matching_vector,row_number_for_subset)
 }
 
 
@@ -106,25 +115,33 @@ for (i in 1:length(ctrl_child_candidates)){
   match1 <- ctrl_child_candidates[i]
   match2 <- ctrl_cg_candidates[i]
   
-  row_number_for_subset <- which(mummer_dist$pattern %in% c(paste(match1, match2), paste(match2, match1)))
+  row_number_for_subset <- which(str_detect(string=mummer_dist$pattern, 
+                                            pattern=match1) & str_detect(string=mummer_dist$pattern, 
+                                            pattern=match2))
   
-  ctrl_matching_vector[i] <- row_number_for_subset
+  ctrl_matching_vector <- c(ctrl_matching_vector, row_number_for_subset)
 }
 
 matched_ctrl_mummer_dist <- mummer_dist[ctrl_matching_vector,] %>% rename(percent_ANI=X10)
 
 matched_ctrl_mummer_dist$AD_hse <- 0
 
-wilcox.test(x=matched_AD_mummer_dist$percent_ANI, y=matched_ctrl_mummer_dist$percent_ANI)
+
+wilcox.test(x=matched_AD_mummer_dist$percent_ANI, 
+            y=matched_ctrl_mummer_dist$percent_ANI,
+            alternative="greater")
+
+
+
 ```
 
 Construct phylogenetic tree using Parsnp output
 
 ```{r, parsnp_tree}
 
-parsnp_tree <- read.tree("../data/raw/parsnp_out/P_2020_11_20_103620407992/parsnp_sub.tree")
+parsnp_tree <- read.tree("../data/raw/parsnp_out/parsnp_sub.tree")
 
-parsnp_tree$tip.label <- gsub(parsnp_tree$tip.label, pattern=".fna", replacement="" )
+#parsnp_tree$tip.label <- gsub(parsnp_tree$tip.label, pattern=".fna", replacement="" )
 
 parsnp_dendrogram <- ggtree(parsnp_tree) + geom_treescale() + geom_tiplab(size=4, color="black")
 

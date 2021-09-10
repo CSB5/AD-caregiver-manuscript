@@ -1,0 +1,13 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WMB1591_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	75.854	3snp		1.099	273	0.133	Bacteriocin_bsa	Bacteriocin_bsa	
+WMB1591_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	89.731	8snp		2.319	345	0.077	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WMB1591_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	149.954			0.0	326	0.043	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WMB1591_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	71.331	1snp		0.203	492	0.056	Staphylokinase_sak	Staphylokinase_sak	
+WMB1591_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	91.235	71.74	106snp5indel210holes	edge0.0	4.775	2430	0.302	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WMB1591_fastpdecont	multi_vir_genes	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	98.537	122.561	227snp5indel139holes		2.39	9635	0.491	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	
+WMB1591_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	98.397	5snp		0.428	1167	0.071	Staphopain_A_scpA	Staphopain_A_scpA	
+WMB1591_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	99.965	188.1	31snp1indel		1.087	2851	0.087	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WMB1591_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	100.0	38.34	20snp1indel		2.656	753	0.24	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WMB1591_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	161.812	6snp		0.625	960	0.028	a-hemolysin_hla	a-hemolysin_hla	
+WMB1591_fastpdecont	multi_vir_genes	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	99.948	95.075	17snp1holes		0.885	1921	0.259	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	
+WMB1591_fastpdecont	multi_vir_genes	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	100.0	126.05	24snp		0.488	4916	0.489	Serine_protease-like_protein_spl_cluster	Serine_protease-like_protein_spl_cluster	

@@ -1,0 +1,19 @@
+Sample	DB	gene	allele	coverage	depth	diffs	uncertainty	divergence	length	maxMAF	clusterid	seqid	annotation
+WMB1571_fastpdecont	multi_vir_genes	Enterotoxin_N_sen	Enterotoxin_N_sen	100.0	70.676			0.0	756	0.05	Enterotoxin_N_sen	Enterotoxin_N_sen	
+WMB1571_fastpdecont	multi_vir_genes	Staphylokinase_sak	Staphylokinase_sak	100.0	104.284	2snp		0.407	492	0.05	Staphylokinase_sak	Staphylokinase_sak	
+WMB1571_fastpdecont	multi_vir_genes	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	100.0	70.523			0.0	345	0.063	Staphylococcal_inhibitor_of_complement_scn	Staphylococcal_inhibitor_of_complement_scn	
+WMB1571_fastpdecont	multi_vir_genes	Enterotoxin_I_sei	Enterotoxin_I_sei	100.0	59.181			0.0	729	0.349	Enterotoxin_I_sei	Enterotoxin_I_sei	
+WMB1571_fastpdecont	multi_vir_genes	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	100.0	208.979			0.0	326	0.035	Phenol-soluble_modulins_psmB	Phenol-soluble_modulins_psmB	
+WMB1571_fastpdecont	multi_vir_genes	Bacteriocin_bsa	Bacteriocin_bsa	100.0	36.766			0.0	273	0.111	Bacteriocin_bsa	Bacteriocin_bsa	
+WMB1571_fastpdecont	multi_vir_genes	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	100.0	53.67	2snp		0.444	450	0.056	Chemotaxis_inhibitory_protein_chip	Chemotaxis_inhibitory_protein_chip	
+WMB1571_fastpdecont	multi_vir_genes	Enterotoxin_M_sem	Enterotoxin_M_sem	100.0	87.304	1snp		0.139	720	0.229	Enterotoxin_M_sem	Enterotoxin_M_sem	
+WMB1571_fastpdecont	multi_vir_genes	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	100.0	137.348	1snp		0.041	2430	0.071	Hyaluronate_lyase_hysA	Hyaluronate_lyase_hysA	
+WMB1571_fastpdecont	multi_vir_genes	Enterotoxin_O_seo	Enterotoxin_O_seo	100.0	66.716			0.0	783	0.083	Enterotoxin_O_seo	Enterotoxin_O_seo	
+WMB1571_fastpdecont	multi_vir_genes	Staphopain_A_scpA	Staphopain_A_scpA	100.0	122.5			0.0	1167	0.083	Staphopain_A_scpA	Staphopain_A_scpA	
+WMB1571_fastpdecont	multi_vir_genes	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	100.0	242.523	36snp		1.263	2851	0.08	Ferrichrome_operon_fhuD	Ferrichrome_operon_fhuD	
+WMB1571_fastpdecont	multi_vir_genes	Enterotoxin_G_seg	Enterotoxin_G_seg	100.0	46.618			0.0	777	0.091	Enterotoxin_G_seg	Enterotoxin_G_seg	
+WMB1571_fastpdecont	multi_vir_genes	Enterotoxin_A_sea	Enterotoxin_A_sea	100.0	50.654	20snp1indel		2.656	753	0.111	Enterotoxin_A_sea	Enterotoxin_A_sea	
+WMB1571_fastpdecont	multi_vir_genes	a-hemolysin_hla	a-hemolysin_hla	100.0	194.399	5snp		0.521	960	0.03	a-hemolysin_hla	a-hemolysin_hla	
+WMB1571_fastpdecont	multi_vir_genes	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	100.0	69.377	20snp1indel		2.545	786	0.25	Enterotoxin_C1_sec1	Enterotoxin_C1_sec1	
+WMB1571_fastpdecont	multi_vir_genes	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	100.0	178.257	8snp		0.083	9635	0.488	Staphylococcal_superantigen-like_SSL1-10	Staphylococcal_superantigen-like_SSL1-10	
+WMB1571_fastpdecont	multi_vir_genes	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	100.0	113.965	1snp		0.052	1921	0.207	Leukotoxin_D,_E_lukD,_lukE	Leukotoxin_D,_E_lukD,_lukE	

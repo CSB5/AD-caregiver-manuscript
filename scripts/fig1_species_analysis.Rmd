@@ -18,6 +18,7 @@ library(ggpubr)
 library(vegan)
 library(ggrepel)
 library(cowplot)
+library(effsize)
 ```
 
 Read metadata and dataframe of raw Bracken counts
@@ -32,7 +33,7 @@ metadata <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE)
 #get a vector of all library IDs that belong to AD houses.
 AD_hses <- metadata %>% filter(child_disease_state==1) %>% dplyr::select(LibraryID)
 
-#Load in species level bracken counts, which was pre-processed to exclude reads classified as contaminants: "Janibacter_indicus", "Homo_sapiens", "Achromobacter_xylosoxidans", "Paracoccus_yeei" and "Acinetobacter_baumannii"
+#Load in species level bracken counts, which was pre-processed to exclude reads classified as contaminants
 bracken_count_mat <- read.table(file="../data/processed/bracken_readcounts_mat", header = T, comment = '', check = F, sep = ' ')
 
 #replace unnecessary symbols in taxa row names
@@ -98,15 +99,54 @@ taxa_wilcox_fn <- function(x){
   
 }
 
+#more stats including median taxa normalized abun for AD/ctrl, IQR for AD/ctrl and Cliff's delta (AD vs ctrl)
+#for info on Cliff's delta: https://garstats.wordpress.com/2016/05/02/robust-effect-sizes-for-2-independent-groups/
+additional_stats_fn <- function(x){
+  taxa_to_test <- taxa_names_after_filter
+  
+  results_list <-  vector(mode="list", length = length(taxa_to_test))
+  
+  for (i in 1: length(taxa_to_test)){
+    taxa <- taxa_to_test[i]
+    test_df <- x[,c(taxa, "AD_hse")]
+    colnames(test_df)[1] <- "test_taxa"
+    
+    #Get Cliff's delta
+    #multiply by -1 so that effects that are more pronounced in AD are positive, while effects that are more pronounced in ctrl are negative for Cliff's delta
+    cliff_d <- (cliff.delta(d=test_df$test_taxa, f=test_df$AD_hse)$estimate)*(-1)
+    AD_median <- median(test_df%>%dplyr::filter(AD_hse=="AD_house")%>%pull(test_taxa))
+    AD_IQR <- stats::IQR(test_df%>%dplyr::filter(AD_hse=="AD_house")%>%pull(test_taxa))
+    ctrl_median <- median(test_df%>%dplyr::filter(AD_hse=="Healthy_house")%>%pull(test_taxa))
+    ctrl_IQR <- stats::IQR(test_df%>%dplyr::filter(AD_hse=="Healthy_house")%>%pull(test_taxa))
+    
+    results_list[[i]] <- data.frame("species"=taxa,
+                                    "cliff_delta"=cliff_d,
+                                    "AD_median"=AD_median,
+                                    "AD_IQR"=AD_IQR,
+                                    "ctrl_median"=ctrl_median,
+                                    "ctrl_IQR"=ctrl_IQR)
+  }
+  return(results_list)
+}
+
+
 wilcox_and_bind_fn <- function(input){ #input can be AC_caregiver_count_CSS etc.
+  #wilcox results
   output_wilcox_df <- taxa_wilcox_fn(input)
   output_wilcox_df <- do.call("rbind", output_wilcox_df)
   output_wilcox_df$padj <- p.adjust(output_wilcox_df $p, method = "fdr")
+  colnames(output_wilcox_df)[1] <- "species"
+  
+  #stats results
+  stats_df <- additional_stats_fn(input)
+  stats_df <- do.call("rbind", stats_df)
+  
+  output_wilcox_df <- merge(output_wilcox_df, stats_df, by = "species")
   return(output_wilcox_df)
 }
 
 prepare_scatter_df_fn <- function(input_CSS, wilcox_df){
-  taxa_to_keep <- wilcox_df %>% filter(padj < 0.05) %>% pull(.y.) %>% 
+  taxa_to_keep <- wilcox_df %>% filter(padj < 0.05) %>% pull(species) %>% 
     append(., c("AD_hse")) #append adds elements to a vector (output of pull)
   input_CSS$LibraryID <- row.names(input_CSS)
   
@@ -232,11 +272,11 @@ Subsequently, filter away rare species, defined by bracken median rel. abundance
 Use the remainder to subset for taxa to keep after CSS normalization
 
 ```{r filter_rare}
-
-rel_abun_col_filter <- vector(length=ncol(subjects_bracken_renorm_df)-1) 
+subjects_bracken_renorm_df <- data.frame(subjects_bracken_renorm_df)
+rel_abun_col_filter <- vector(length=ncol(subjects_bracken_renorm_df)) 
 rel_abun_col_filter[1] <- TRUE
 for (i in 2:ncol(subjects_bracken_renorm_df)) {
-  rel_abun_col_filter[i] <- ifelse(median(pull(subjects_bracken_renorm_df[,i])) >= 0.001, TRUE, FALSE )
+  rel_abun_col_filter[i] <- ifelse(median(subjects_bracken_renorm_df[,i]) >= 0.001, TRUE, FALSE )
 }
 
 bracken_filtered_taxa_df <- subjects_bracken_renorm_df[,rel_abun_col_filter]
@@ -264,7 +304,7 @@ bracken_MO_CSS_filtered_df$AD_hse <- ifelse(bracken_MO_CSS_filtered_df$AD_hse ==
 bracken_MO_CSS_filtered_df$AD_hse <- factor(bracken_MO_CSS_filtered_df$AD_hse, 
                                            levels=c("Healthy_house", "AD_house"))
 
-write.table(bracken_MO_CSS_filtered_df, "../data/processed/bracken_MO_CSS_filtered_df")
+#write.table(bracken_MO_CSS_filtered_df, "../data/processed/bracken_MO_CSS_filtered_df")
 
 ```
 
@@ -281,23 +321,29 @@ AC_all_count_CSS <- split_dataset_fn(mode="AC")
 
 ```
 
-Perform wilcoxon rank sum tests on the datasets, for the 43 species after filtering
+Perform wilcoxon rank sum tests on the datasets, for these species after filtering. Collect statistics for main manuscript supplementary table 2.
+
+Only keep those with padj < 0.05 in Supplementary table 2
 
 ```{r, message=FALSE}
 ########Testing children samples#####
 
-child_AC_CSS_wilcox_df <- wilcox_and_bind_fn(AC_child_count_CSS)
+child_AC_CSS_wilcox_df <- wilcox_and_bind_fn(AC_child_count_CSS) %>% dplyr::filter(padj<0.05)
 
-child_VF_CSS_wilcox_df <- wilcox_and_bind_fn(VF_child_count_CSS)
+child_VF_CSS_wilcox_df <- wilcox_and_bind_fn(VF_child_count_CSS) %>% dplyr::filter(padj<0.05)
+
+write_tsv(child_AC_CSS_wilcox_df, file="../data/processed/tableS2_child_AC_CSS_wilcox.tsv")
+write_tsv(child_VF_CSS_wilcox_df, file="../data/processed/tableS2_child_VF_CSS_wilcox.tsv")
 
 
 ########Testing caregiver samples#####
+#As can be seen, nothing passes p adj < 0.05
+cg_AC_CSS_wilcox_df <- wilcox_and_bind_fn(AC_caregiver_count_CSS) 
 
-cg_AC_CSS_wilcox_df <- wilcox_and_bind_fn(AC_caregiver_count_CSS)
-
-cg_VF_CSS_wilcox_df <- wilcox_and_bind_fn(VF_caregiver_count_CSS)
+cg_VF_CSS_wilcox_df <- wilcox_and_bind_fn(VF_caregiver_count_CSS) 
 
 ```
+
 
 Scatter plots to show which taxa are more abundant in AD vs healthy skin (children only, since only the taxa with adjusted p value <0.05 are included)
 
@@ -312,7 +358,6 @@ AC_child_CSS_scatter_input <- prepare_scatter_df_fn(AC_child_count_CSS, child_AC
 AC_child_taxa_scatter <- ggplot(AC_child_CSS_scatter_input, aes(x=median_CSS_counts_healthy, y=median_CSS_counts_AD)) + geom_point() + 
   geom_text(aes(label=ifelse(str_detect(species,"Dermacoccus_nishinomiyaensis|Staphylococcus_aureus|Staphylococcus_hominis|Streptococcus_mitis|Staphylococcus_capitis"), 
                                    species, " "))) +
-  geom_abline(intercept=0, slope =1) +
     theme_classic() + xlim(5, 13) + ylim(5, 13) +
   geom_point(data=AC_child_CSS_scatter_input %>% 
                filter(species %in% c("Staphylococcus_aureus", 
@@ -321,11 +366,12 @@ AC_child_taxa_scatter <- ggplot(AC_child_CSS_scatter_input, aes(x=median_CSS_cou
                                      "Streptococcus_mitis",
                                      "Dermacoccus_nishinomiyaensis")),
              aes(x=median_CSS_counts_healthy, y=median_CSS_counts_AD),
-             colour="red")
+             colour="red") + geom_line(data=data.frame(x=c(5,13),y=c(5,13)), aes(x=x, y=y))
 
-AC_child_taxa_scatter
+AC_child_taxa_scatter 
 
-ggsave("../plots/fig1a_AC_child_scatter.svg", plot=AC_child_taxa_scatter, width=10, height=7)
+ggsave("../plots/fig1a_AC_child_scatter.svg", plot=AC_child_taxa_scatter, width=10, height=10)
+
 
 ```
 
@@ -337,12 +383,11 @@ VF_child_CSS_scatter_input <- prepare_scatter_df_fn(VF_child_count_CSS, child_VF
 
 
 VF_child_taxa_scatter <- ggplot(VF_child_CSS_scatter_input, aes(x=median_CSS_counts_healthy, y=median_CSS_counts_AD)) + geom_text_repel(aes(label=species)) + geom_point()+
-  geom_abline(intercept=0, slope =1) +
-    theme_classic() + xlim(5, 10) + ylim(5, 10)
+    theme_classic() + xlim(5, 10) + ylim(5, 10) + geom_line(data=data.frame(x=c(5,10),y=c(5,10)), aes(x=x, y=y))
 
-VF_child_taxa_scatter
+VF_child_taxa_scatter 
 
-ggsave("../plots/fig1a_VF_child_scatter.svg", plot=VF_child_taxa_scatter, width=10, height=7)
+ggsave("../plots/fig1a_VF_child_scatter.svg", plot=VF_child_taxa_scatter, width=10, height=10)
 
 ```
 
