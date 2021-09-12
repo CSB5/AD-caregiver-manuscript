@@ -36,10 +36,10 @@ metadata <- read_tsv("../metadata/sample_metadata_counts.tsv", col_names = TRUE)
 
 
 ```{r functions}
-PCOA_plot_fn <- function(df, marker){
+PCOA_plot_fn <- function(df, marker, font_size=8){
   marker_quo <- enquo(marker)
   ggplot(df, aes(X, Y, label = !!marker_quo)) +
-  geom_text_repel( aes(colour = factor(sample_category)), size =8 ) +
+  geom_text_repel( aes(colour = factor(sample_category)), size =font_size ) +
   theme_classic() +
   labs(x=paste0('PCoA1 (',round(subjects_pcoa_eigen[1], 1),'%)'),
        y=paste0('PCoA2 (',round(subjects_pcoa_eigen[2], 1),'%)')) +
@@ -86,4 +86,14 @@ PCOA_plot_fn(subjects_mds.data %>% filter(body_region %in% c("AC", "VF")), marke
 ggsave(filename="../plots/figS1b_batch_PCoA.eps", plot=last_plot(), width=18, height=15)
 
 ```
+Are there differences by ethnicity?
+```{r ethnicity_PCOA, echo=FALSE}
 
+subjects_mds.data$race_symbol <- substr(subjects_mds.data$race,1,1)
+
+PCOA_plot_fn(subjects_mds.data %>% 
+               filter(body_region %in% c("AC", "VF") & child_disease_state==1), 
+             marker=race_symbol, font_size = 8)
+
+
+```

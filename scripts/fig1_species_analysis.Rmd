@@ -234,6 +234,20 @@ get_index_boxplot <- function(x, comparison, index){
                           c("AD_child_AC", "AD_caregiver_AC"))
     }
   
+  else if (comparison=="ethnicity"){
+    df <- x %>% filter(child_disease_state=="1" & body_region %in%  c("VF","AC"))
+    df$plotting_category <- paste0(df$plotting_category,"_",df$race)
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('AD_child_VF_Chinese', 'AD_child_VF_Malay',
+               'AD_child_AC_Chinese', 'AD_child_AC_Malay', 
+               'AD_caregiver_VF_Chinese', 'AD_caregiver_VF_Malay',
+               'AD_caregiver_AC_Chinese', 'AD_caregiver_AC_Malay'), ordered = TRUE)
+    my_comparisons <- list( c('AD_child_VF_Chinese', 'AD_child_VF_Malay'), 
+                          c('AD_child_AC_Chinese', 'AD_child_AC_Malay'),
+                          c('AD_caregiver_VF_Chinese', 'AD_caregiver_VF_Malay'),
+                          c('AD_caregiver_AC_Chinese', 'AD_caregiver_AC_Malay'))
+    }
+  
   if(index=="shannon"){
     axis_title <- "Shannon diversity"
   } else if(index=="simpson") {
@@ -468,5 +482,21 @@ ggsave(plot=children_shannon_boxplot, filename="../plots/fig1c_child_shannon.svg
         width=18, height=9)
 
 ```
+
+Shannon diversity comparison between individuals of different ethnicities from AD houses.
+
+```{r echo=FALSE}
+
+AD_ethnicity_shannon_boxplot <- get_index_boxplot(subjects_bracken_renorm_shannon,
+                                                            comparison = "ethnicity",
+                                                            index="shannon") 
+
+AD_ethnicity_shannon_boxplot
+
+ggsave(plot=AD_ethnicity_shannon_boxplot, filename="../../../local_project/AD_caregiver/manuscript/jaci_rebuttal/AD_ethnicity_shannon_boxplot.svg",
+        width=18, height=9)
+
+```
+
 
 
