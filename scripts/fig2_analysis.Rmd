@@ -387,7 +387,7 @@ summary(VF_all_CSS_post_rfe_model)
 
 #input_model is an object of class "train"
 tidy_lm_res <- function(input_model){
-  res_df <- data.frame(summary(VF_all_CSS_post_rfe_model)$coefficients)
+  res_df <- data.frame(summary(input_model)$coefficients)
   res_df$feature <- row.names(res_df)
   colnames(res_df) <- c("Estimate", "Std_err", "z_value", "p_value", "feature")
   

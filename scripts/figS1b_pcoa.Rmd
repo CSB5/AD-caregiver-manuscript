@@ -50,6 +50,20 @@ PCOA_plot_fn <- function(df, marker, font_size=8){
         panel.border = element_rect(color = "black", fill = NA, size = 1))
 }
 
+PCOA_plot_fn2 <- function(df, marker, font_size=8){
+  marker_quo <- enquo(marker)
+  ggplot(df, aes(X, Y, label = !!marker_quo)) +
+  geom_text_repel( aes(colour = factor(child_shower_cat)), size =font_size ) +
+  theme_classic() +
+  labs(x=paste0('PCoA1 (',round(subjects_pcoa_eigen[1], 1),'%)'),
+       y=paste0('PCoA2 (',round(subjects_pcoa_eigen[2], 1),'%)')) +
+  scale_color_manual(values = c("blue", "green", "red")) +
+    geom_density_2d(stat = "density2d",inherit.aes = TRUE, colour="black") +
+    facet_grid(body_region ~ .) +    #a formula to facet_grid(), of the form vertical ~ horizontal.
+    theme(
+        panel.border = element_rect(color = "black", fill = NA, size = 1))
+}
+
 ```
 
 Do PCoA
@@ -97,3 +111,32 @@ PCOA_plot_fn(subjects_mds.data %>%
 
 
 ```
+
+Are there differences by showering habits? Note that showering data only exists for children. 
+
+```{r}
+#Load in demographic metadata, which contains frequency of showering
+
+demographics <- read_tsv("../metadata/combined_demographics.tsv")
+
+#child_shower_cat of 1 denotes a frequency of 2-4x a week,
+#child_shower_cat of 2 denotes a frequency of once a day,
+#child_shower_cat of 3 denotes a frequency of twice a day,
+
+children_mds.data <- subjects_mds.data %>% dplyr::filter(sample_category=="child")
+
+children_mds.data <- merge(children_mds.data, demographics %>% dplyr::select(subject_ID, child_shower_cat),
+                           by="subject_ID")
+
+children_mds.data$child_disease_state_fmt <- ifelse(children_mds.data$child_disease_state==1,
+                                                    "AD", "ctrl")
+
+PCOA_plot_fn2(children_mds.data %>% 
+               filter(body_region %in% c("AC", "VF")), 
+             marker=child_disease_state_fmt, font_size = 4)
+
+#Staphylococcus relative abundance between the groups?
+
+
+```
+

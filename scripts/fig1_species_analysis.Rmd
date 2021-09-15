@@ -246,6 +246,21 @@ get_index_boxplot <- function(x, comparison, index){
                           c('AD_child_AC_Chinese', 'AD_child_AC_Malay'),
                           c('AD_caregiver_VF_Chinese', 'AD_caregiver_VF_Malay'),
                           c('AD_caregiver_AC_Chinese', 'AD_caregiver_AC_Malay'))
+  }
+  
+  else if(comparison=="bathing"){ #exclude lesions
+    df <- x %>% filter(sample_category=="child" & body_region %in%  c("VF","AC") )
+    df$plotting_category <- paste0(df$plotting_category,"_",df$child_shower_cat_fmt)
+    df$plotting_category <- factor(df$plotting_category,
+    levels = c('healthy_child_VF_twice_per_day', 'healthy_child_VF_daily_or_less',
+               'healthy_child_AC_twice_per_day', 'healthy_child_AC_daily_or_less',
+               'AD_child_VF_twice_per_day', 'AD_child_VF_daily_or_less',
+               'AD_child_AC_twice_per_day', 'AD_child_AC_daily_or_less'), ordered = TRUE)
+    
+      my_comparisons <- list(c('healthy_child_VF_twice_per_day', 'healthy_child_VF_daily_or_less'), 
+                          c('healthy_child_AC_twice_per_day', 'healthy_child_AC_daily_or_less'),
+                        c('AD_child_VF_twice_per_day', 'AD_child_VF_daily_or_less'),
+                        c('AD_child_AC_twice_per_day', 'AD_child_AC_daily_or_less'))
     }
   
   if(index=="shannon"){
@@ -493,10 +508,106 @@ AD_ethnicity_shannon_boxplot <- get_index_boxplot(subjects_bracken_renorm_shanno
 
 AD_ethnicity_shannon_boxplot
 
-ggsave(plot=AD_ethnicity_shannon_boxplot, filename="../../../local_project/AD_caregiver/manuscript/jaci_rebuttal/AD_ethnicity_shannon_boxplot.svg",
-        width=18, height=9)
 
 ```
+
+Shannon diversity for children 
+
+Are there differences by showering habits? Note that showering data only exists for children. 
+
+```{r}
+#Load in demographic metadata, which contains frequency of showering
+
+demographics <- read_tsv("../metadata/combined_demographics.tsv")
+
+#child_shower_cat of 1 denotes a frequency of 2-4x a week,
+#child_shower_cat of 2 denotes a frequency of once a day,
+#child_shower_cat of 3 denotes a frequency of twice a day,
+
+child_bracken_renorm_shannon <- subjects_bracken_renorm_shannon %>% filter(sample_category=="child")
+
+child_bracken_renorm_shannon <- merge(child_bracken_renorm_shannon,
+                                      demographics %>% dplyr::select(subject_ID, child_shower_cat),
+                           by="subject_ID")
+
+child_bracken_renorm_shannon$child_shower_cat_fmt <- ifelse(child_bracken_renorm_shannon$child_shower_cat==3,
+                                                            "twice_per_day","daily_or_less") 
+
+child_bathing_shannon_boxplot <- get_index_boxplot(child_bracken_renorm_shannon,
+                                                            comparison = "bathing",
+                                                            index="shannon") 
+
+child_bathing_shannon_boxplot
+
+length(which(child_bracken_renorm_shannon$body_region=="VF" & 
+        child_bracken_renorm_shannon$child_disease_state==0 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="twice_per_day")) #17
+
+length(which(child_bracken_renorm_shannon$body_region=="VF" & 
+        child_bracken_renorm_shannon$child_disease_state==0 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="daily_or_less")) #13
+
+
+
+length(which(child_bracken_renorm_shannon$body_region=="AC" & 
+        child_bracken_renorm_shannon$child_disease_state==0 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="twice_per_day")) #17
+
+length(which(child_bracken_renorm_shannon$body_region=="AC" & 
+        child_bracken_renorm_shannon$child_disease_state==0 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="daily_or_less")) #13
+
+
+length(which(child_bracken_renorm_shannon$body_region=="VF" & 
+        child_bracken_renorm_shannon$child_disease_state==1 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="twice_per_day")) #19
+
+length(which(child_bracken_renorm_shannon$body_region=="VF" & 
+        child_bracken_renorm_shannon$child_disease_state==1 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="daily_or_less")) #7
+
+length(which(child_bracken_renorm_shannon$body_region=="AC" & 
+        child_bracken_renorm_shannon$child_disease_state==1 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="twice_per_day")) #20
+
+length(which(child_bracken_renorm_shannon$body_region=="AC" & 
+        child_bracken_renorm_shannon$child_disease_state==1 & 
+        child_bracken_renorm_shannon$child_shower_cat_fmt=="daily_or_less")) #7
+
+
+```
+
+Are there any significant differences in S. aureus normalized relative abundances with showering habits?
+
+```{r}
+
+bathing_boxplot_fn <- function(df=VF_child_count_CSS, species, title){
+  species <- enquo(species)
+  df$LibraryID <- row.names(df)
+  df <- merge(df, child_bracken_renorm_shannon %>% 
+                dplyr::select(LibraryID,child_shower_cat_fmt),by="LibraryID")
+  df$plotting_cat <- paste0(df$AD_hse,"_",df$child_shower_cat_fmt)
+  
+  df$plotting_cat <- factor(df$plotting_cat,
+    levels = c('Healthy_house_twice_per_day', 'Healthy_house_daily_or_less',
+               'AD_house_twice_per_day', 'AD_house_daily_or_less'), ordered = TRUE)
+    
+      my_comparisons <- list(c('Healthy_house_twice_per_day', 'Healthy_house_daily_or_less'), 
+                          c('AD_house_twice_per_day', 'AD_house_daily_or_less'))
+      
+    plot <- ggplot(df, aes(x=plotting_cat, y=!!species)) + geom_boxplot() + theme_classic() + 
+  stat_compare_means(paired = FALSE, method = "wilcox.test", comparisons=my_comparisons) +
+    theme(axis.title.x=element_blank(), axis.text.x = element_text(angle = 45, hjust=1))
+  return(plot)
+  
+} 
+
+bathing_boxplot_fn(df=VF_child_count_CSS, species=Staphylococcus_aureus)
+
+
+
+```
+
 
 
 

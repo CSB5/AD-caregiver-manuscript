@@ -147,7 +147,10 @@ my_comparisons <- list( c("healthy_unmatched_house", "healthy_matched_house"),
 
 #Make the plot
 
-VF_BC_boxplot <- ggplot(all_VF_BC_df, aes(x=comparator, y=value)) + geom_boxplot(fill=c("red", "red", "blue", "blue")) + theme_classic() + 
+VF_BC_boxplot <- ggplot(all_VF_BC_df, aes(x=comparator, y=value)) + 
+  geom_violin(scale="width") +
+  geom_boxplot(fill=c("red", "red", "blue", "blue")) + 
+  theme_classic() + 
   stat_compare_means(paired = FALSE, method = "wilcox.test", comparisons = my_comparisons) +
   ylab("Bray-Curtis dissimilarity") +
   ggtitle("Volar forearm (children vs caregivers)")
@@ -176,7 +179,9 @@ all_AC_BC_df <- rbind(healthy_AC_BC_df, AD_AC_BC_df)
 
 #Make the plot
 
-AC_BC_boxplot <- ggplot(all_AC_BC_df, aes(x=comparator, y=value)) + geom_boxplot(fill=c("red", "red", "blue", "blue")) + theme_classic() + 
+AC_BC_boxplot <- ggplot(all_AC_BC_df, aes(x=comparator, y=value)) + 
+  geom_violin(scale="width") +
+  geom_boxplot(fill=c("red", "red", "blue", "blue")) + theme_classic() + 
   stat_compare_means(paired = FALSE, method = "wilcox.test", comparisons = my_comparisons) +
   ylab("Bray-Curtis dissimilarity") +
   ggtitle("Antecubital fossae (children vs caregivers)")
