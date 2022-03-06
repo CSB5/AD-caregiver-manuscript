@@ -53,8 +53,10 @@ ii) >= 95% completeness and <= 5% contamination
 
 isolates_passQC <- checkm_eval_dat %>% filter(completeness >= 95 & contamination <= 5) %>% filter(bin_id %in% (all_isolate_metadata %>% filter(percent_ANI_vs_ref >= 95) %>% pull(LibraryID)))  #55 genomes left
 
-#final metadata for 52 isolates used in the analysis
+#final metadata for isolates used in the analysis
 final_isolate_metadata <- all_isolate_metadata %>% filter(LibraryID %in% isolates_passQC$bin_id)
+
+write_tsv(final_isolate_metadata, "../metadata/passQC_isolates_metadata.tsv")
 
 ```
 
