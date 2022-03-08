@@ -5,4 +5,4 @@ Raw sequencing data has been uploaded to the European Nucleotide Archive, under 
 
 To run the scripts, clone this repository and specify working directory to the scripts/ subfolder using here:here() in R or open the project using the .Rproj file
 
-![Experimental design and samples](/plots/figS1a.png)
+<img src='/plots/figS1a.png' width='50'>
